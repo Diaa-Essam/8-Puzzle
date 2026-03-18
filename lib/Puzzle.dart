@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-// class HelloFlutter extends StatefulWidget {
-//   const HelloFlutter({super.key});
-//   @override
-//   State<HelloFlutter> createState() => _AboutUsState();
-// }
+class Puzzle extends StatefulWidget {
+  const Puzzle({super.key});
+  @override
+  State<Puzzle> createState() => _PuzzleState();
+}
 
-class Puzzle extends StatelessWidget {
+class _PuzzleState extends State<Puzzle> {
+  List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,44 +22,66 @@ class Puzzle extends StatelessWidget {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-
-              children: [buildTile("1"), buildTile("2"), buildTile("3")],
+              children: [buildTile(0), buildTile(1), buildTile(2)],
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [buildTile("4"), buildTile("5"), buildTile("6")],
+              children: [buildTile(3), buildTile(4), buildTile(5)],
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [buildTile("7"), buildTile("8"), buildTile("")],
+              children: [buildTile(6), buildTile(7), buildTile(8)],
             ),
           ],
         ),
       ),
     );
   }
-}
 
-Widget buildTile(String text) {
-  return GestureDetector(
-    onTap: () {
-      if (text.isNotEmpty) {
-        print("Tapped Tile: $text");
-      }
-    },
-    child: Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: text == "" ? Colors.transparent : Colors.white,
-        border: Border.all(),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+  Widget buildTile(int tileIndex) {
+    int emptyIndex = tiles.indexOf(0);
+    int value = tiles[tileIndex];
+    return GestureDetector(
+      onTap: () {
+        if (validMove(tileIndex, emptyIndex)) {
+          print("Valid Move");
+          setState(() {
+            swap(tiles, tileIndex, emptyIndex);
+          });
+        } else {
+          print("Not A Valid Move");
+        }
+      },
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: value == 0 ? Colors.transparent : Colors.white,
+          border: Border.all(),
+        ),
+        child: Center(
+          child: Text(
+            value == 0 ? "" : "${value}",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
+  bool validMove(int tileIndex, int emptyIndex) {
+    if (emptyIndex == tileIndex + 1 && emptyIndex ~/ 3 == tileIndex ~/ 3 ||
+        emptyIndex == tileIndex - 1 && emptyIndex ~/ 3 == tileIndex ~/ 3 ||
+        emptyIndex == tileIndex + 3 ||
+        emptyIndex == tileIndex - 3) {
+      return true;
+    }
+    return false;
+  }
+
+  void swap(List<int> tiles, int tileIndex, int emptyIndex) {
+    int temp = tiles[tileIndex];
+    tiles[tileIndex] = tiles[emptyIndex];
+    tiles[emptyIndex] = temp;
+  }
 }
