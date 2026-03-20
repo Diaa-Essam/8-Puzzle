@@ -12,18 +12,7 @@ class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   @override
   void initState() {
-    for (int c = 0; c < 100; c++) {
-      List<int> possibleMoves = [];
-      int emptyIndex = tiles.indexOf(0);
-      for (int i = 0; i < 9; i++) {
-        if (validMove(i, emptyIndex)) {
-          possibleMoves.add(i);
-        }
-      }
-      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
-      swap(tiles, pickedTile, emptyIndex);
-    }
-
+    shuffle();
     super.initState();
   }
 
@@ -66,10 +55,29 @@ class _PuzzleState extends State<Puzzle> {
           print("Valid Move");
           setState(() {
             swap(tiles, tileIndex, emptyIndex);
-            if (winState()) {
-              print("Win State");
-            }
           });
+          if (winState()) {
+            print("Win State");
+            showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text("You Win 🎉"),
+                content: Text("Congratulations!"),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        shuffle();
+                      });
+                    },
+                    child: Text("Restart"),
+                  ),
+                ],
+              ),
+            );
+          }
         } else {
           print("Not A Valid Move");
         }
@@ -114,5 +122,22 @@ class _PuzzleState extends State<Puzzle> {
       }
     }
     return true;
+  }
+
+  void shuffle() {
+    // reset tiles to solved
+    // shuffle again
+    tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+    for (int c = 0; c < 4; c++) {
+      List<int> possibleMoves = [];
+      int emptyIndex = tiles.indexOf(0);
+      for (int i = 0; i < 9; i++) {
+        if (validMove(i, emptyIndex)) {
+          possibleMoves.add(i);
+        }
+      }
+      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
+      swap(tiles, pickedTile, emptyIndex);
+    }
   }
 }
