@@ -24,23 +24,26 @@ class _PuzzleState extends State<Puzzle> {
         title: Text("8-Puzzle", style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [buildTile(0), buildTile(1), buildTile(2)],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [buildTile(3), buildTile(4), buildTile(5)],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [buildTile(6), buildTile(7), buildTile(8)],
-            ),
-          ],
+      body: Container(
+        color: Colors.brown[100],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [buildTile(0), buildTile(1), buildTile(2)],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [buildTile(3), buildTile(4), buildTile(5)],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [buildTile(6), buildTile(7), buildTile(8)],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -52,12 +55,10 @@ class _PuzzleState extends State<Puzzle> {
     return GestureDetector(
       onTap: () {
         if (validMove(tileIndex, emptyIndex)) {
-          print("Valid Move");
           setState(() {
             swap(tiles, tileIndex, emptyIndex);
           });
           if (winState()) {
-            print("Win State");
             showDialog(
               barrierDismissible: false,
               context: context,
@@ -82,17 +83,33 @@ class _PuzzleState extends State<Puzzle> {
           print("Not A Valid Move");
         }
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 150),
         width: 80,
         height: 80,
+        margin: EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: value == 0 ? Colors.transparent : Colors.white,
+          boxShadow: value == 0
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(2, 2),
+                  ),
+                ],
+          borderRadius: BorderRadius.circular(12),
+          color: value == 0 ? Colors.transparent : Colors.brown,
           border: Border.all(),
         ),
         child: Center(
           child: Text(
             value == 0 ? "" : "${value}",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -128,16 +145,18 @@ class _PuzzleState extends State<Puzzle> {
     // reset tiles to solved
     // shuffle again
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-    for (int c = 0; c < 4; c++) {
-      List<int> possibleMoves = [];
-      int emptyIndex = tiles.indexOf(0);
-      for (int i = 0; i < 9; i++) {
-        if (validMove(i, emptyIndex)) {
-          possibleMoves.add(i);
+    while (winState()) {
+      for (int c = 0; c < 4; c++) {
+        List<int> possibleMoves = [];
+        int emptyIndex = tiles.indexOf(0);
+        for (int i = 0; i < 9; i++) {
+          if (validMove(i, emptyIndex)) {
+            possibleMoves.add(i);
+          }
         }
+        int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
+        swap(tiles, pickedTile, emptyIndex);
       }
-      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
-      swap(tiles, pickedTile, emptyIndex);
     }
   }
 }
