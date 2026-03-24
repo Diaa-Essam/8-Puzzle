@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -11,10 +12,20 @@ class Puzzle extends StatefulWidget {
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   int moves = 0;
+  int time = 0;
+  Timer? timer;
   @override
   void initState() {
     shuffle();
+    _startCountUp();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -33,9 +44,10 @@ class _PuzzleState extends State<Puzzle> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Moves: $moves",
+                "Moves: $moves\nTimer: $time",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
+
               SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -48,6 +60,16 @@ class _PuzzleState extends State<Puzzle> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [buildTile(6), buildTile(7), buildTile(8)],
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                child: Text("Restart"),
+                onPressed: () {
+                  setState(() {
+                    shuffle();
+                    _startCountUp();
+                  });
+                },
               ),
             ],
           ),
@@ -67,6 +89,7 @@ class _PuzzleState extends State<Puzzle> {
             moves++;
           });
           if (winState()) {
+            timer?.cancel();
             showDialog(
               barrierDismissible: false,
               context: context,
@@ -79,6 +102,7 @@ class _PuzzleState extends State<Puzzle> {
                       Navigator.of(context).pop();
                       setState(() {
                         shuffle();
+                        _startCountUp();
                       });
                     },
                     child: Text("Restart"),
@@ -151,6 +175,7 @@ class _PuzzleState extends State<Puzzle> {
 
   void shuffle() {
     moves = 0;
+    time = 0;
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
     while (winState()) {
       for (int c = 0; c < 4; c++) {
@@ -165,5 +190,21 @@ class _PuzzleState extends State<Puzzle> {
         swap(tiles, pickedTile, emptyIndex);
       }
     }
+  }
+
+  void _startCountUp() {
+    timer?.cancel();
+
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        // if (winState()) {
+        //   shuffle();
+        //   timer.cancel();
+        // } else {
+        //   time++;
+        // }
+        time++;
+      });
+    });
   }
 }
