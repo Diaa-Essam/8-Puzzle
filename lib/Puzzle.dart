@@ -10,6 +10,7 @@ class Puzzle extends StatefulWidget {
 
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  int moves = 0;
   @override
   void initState() {
     shuffle();
@@ -26,10 +27,16 @@ class _PuzzleState extends State<Puzzle> {
       ),
       body: Container(
         color: Colors.brown[100],
+
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Text(
+                "Moves: $moves",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [buildTile(0), buildTile(1), buildTile(2)],
@@ -57,6 +64,7 @@ class _PuzzleState extends State<Puzzle> {
         if (validMove(tileIndex, emptyIndex)) {
           setState(() {
             swap(tiles, tileIndex, emptyIndex);
+            moves++;
           });
           if (winState()) {
             showDialog(
@@ -142,8 +150,7 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   void shuffle() {
-    // reset tiles to solved
-    // shuffle again
+    moves = 0;
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
     while (winState()) {
       for (int c = 0; c < 4; c++) {
