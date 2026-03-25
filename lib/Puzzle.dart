@@ -23,7 +23,6 @@ class _PuzzleState extends State<Puzzle> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     timer?.cancel();
     super.dispose();
   }
@@ -44,7 +43,7 @@ class _PuzzleState extends State<Puzzle> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Moves: $moves\nTimer: $time",
+                "Moves: $moves\nTimer: ${formatTime(time)}",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
@@ -206,5 +205,15 @@ class _PuzzleState extends State<Puzzle> {
         time++;
       });
     });
+  }
+
+  String formatTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int remainingSeconds = seconds % 60;
+
+    String m = minutes.toString().padLeft(2, '0');
+    String s = remainingSeconds.toString().padLeft(2, '0');
+
+    return "$m:$s";
   }
 }
