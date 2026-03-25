@@ -1,10 +1,11 @@
 import 'dart:math';
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'Tile.dart';
 
 class Puzzle extends StatefulWidget {
   const Puzzle({super.key});
+
   @override
   State<Puzzle> createState() => _PuzzleState();
 }
@@ -14,6 +15,7 @@ class _PuzzleState extends State<Puzzle> {
   int moves = 0;
   int time = 0;
   Timer? timer;
+
   @override
   void initState() {
     shuffle();
@@ -32,43 +34,64 @@ class _PuzzleState extends State<Puzzle> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.brown,
-        title: Text("8-Puzzle", style: TextStyle(color: Colors.white)),
+        title: const Text("8-Puzzle", style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Container(
         color: Colors.brown[100],
-
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 "Moves: $moves\nTimer: ${formatTime(time)}",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Row 1
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TileWidget(value: tiles[0], onTap: () => handleTap(0)),
+                  TileWidget(value: tiles[1], onTap: () => handleTap(1)),
+                  TileWidget(value: tiles[2], onTap: () => handleTap(2)),
+                ],
               ),
 
-              SizedBox(height: 10),
+              // Row 2
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [buildTile(0), buildTile(1), buildTile(2)],
+                children: [
+                  TileWidget(value: tiles[3], onTap: () => handleTap(3)),
+                  TileWidget(value: tiles[4], onTap: () => handleTap(4)),
+                  TileWidget(value: tiles[5], onTap: () => handleTap(5)),
+                ],
               ),
+
+              // Row 3
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [buildTile(3), buildTile(4), buildTile(5)],
+                children: [
+                  TileWidget(value: tiles[6], onTap: () => handleTap(6)),
+                  TileWidget(value: tiles[7], onTap: () => handleTap(7)),
+                  TileWidget(value: tiles[8], onTap: () => handleTap(8)),
+                ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [buildTile(6), buildTile(7), buildTile(8)],
-              ),
-              SizedBox(height: 10),
+
+              const SizedBox(height: 10),
+
               ElevatedButton(
-                child: Text("Restart"),
                 onPressed: () {
                   setState(() {
                     shuffle();
                     _startCountUp();
                   });
                 },
+                child: const Text("Restart"),
               ),
             ],
           ),
@@ -77,84 +100,29 @@ class _PuzzleState extends State<Puzzle> {
     );
   }
 
-  Widget buildTile(int tileIndex) {
+  void handleTap(int tileIndex) {
     int emptyIndex = tiles.indexOf(0);
-    int value = tiles[tileIndex];
-    return GestureDetector(
-      onTap: () {
-        if (validMove(tileIndex, emptyIndex)) {
-          setState(() {
-            swap(tiles, tileIndex, emptyIndex);
-            moves++;
-          });
-          if (winState()) {
-            timer?.cancel();
-            showDialog(
-              barrierDismissible: false,
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text("You Win 🎉"),
-                content: Text("Congratulations!"),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      setState(() {
-                        shuffle();
-                        _startCountUp();
-                      });
-                    },
-                    child: Text("Restart"),
-                  ),
-                ],
-              ),
-            );
-          }
-        } else {
-          print("Not A Valid Move");
-        }
-      },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 150),
-        width: 80,
-        height: 80,
-        margin: EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          boxShadow: value == 0
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  ),
-                ],
-          borderRadius: BorderRadius.circular(12),
-          color: value == 0 ? Colors.transparent : Colors.brown,
-          border: Border.all(),
-        ),
-        child: Center(
-          child: Text(
-            value == 0 ? "" : "${value}",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
+
+    if (validMove(tileIndex, emptyIndex)) {
+      setState(() {
+        swap(tiles, tileIndex, emptyIndex);
+        moves++;
+      });
+
+      if (winState()) {
+        timer?.cancel();
+        showWinDialog();
+      }
+    } else {
+      print("Not A Valid Move");
+    }
   }
 
   bool validMove(int tileIndex, int emptyIndex) {
-    if (emptyIndex == tileIndex + 1 && emptyIndex ~/ 3 == tileIndex ~/ 3 ||
-        emptyIndex == tileIndex - 1 && emptyIndex ~/ 3 == tileIndex ~/ 3 ||
+    return (emptyIndex == tileIndex + 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
+        (emptyIndex == tileIndex - 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
         emptyIndex == tileIndex + 3 ||
-        emptyIndex == tileIndex - 3) {
-      return true;
-    }
-    return false;
+        emptyIndex == tileIndex - 3;
   }
 
   void swap(List<int> tiles, int tileIndex, int emptyIndex) {
@@ -165,9 +133,7 @@ class _PuzzleState extends State<Puzzle> {
 
   bool winState() {
     for (int i = 0; i < tiles.length - 1; i++) {
-      if (i + 1 != tiles[i]) {
-        return false;
-      }
+      if (tiles[i] != i + 1) return false;
     }
     return true;
   }
@@ -176,15 +142,18 @@ class _PuzzleState extends State<Puzzle> {
     moves = 0;
     time = 0;
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+
     while (winState()) {
       for (int c = 0; c < 4; c++) {
         List<int> possibleMoves = [];
         int emptyIndex = tiles.indexOf(0);
+
         for (int i = 0; i < 9; i++) {
           if (validMove(i, emptyIndex)) {
             possibleMoves.add(i);
           }
         }
+
         int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
         swap(tiles, pickedTile, emptyIndex);
       }
@@ -194,17 +163,34 @@ class _PuzzleState extends State<Puzzle> {
   void _startCountUp() {
     timer?.cancel();
 
-    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        // if (winState()) {
-        //   shuffle();
-        //   timer.cancel();
-        // } else {
-        //   time++;
-        // }
         time++;
       });
     });
+  }
+
+  void showWinDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("You Win 🎉"),
+        content: const Text("Congratulations!"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                shuffle();
+                _startCountUp();
+              });
+            },
+            child: const Text("Restart"),
+          ),
+        ],
+      ),
+    );
   }
 
   String formatTime(int seconds) {
