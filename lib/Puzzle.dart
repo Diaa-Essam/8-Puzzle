@@ -52,34 +52,22 @@ class _PuzzleState extends State<Puzzle> {
               ),
               const SizedBox(height: 10),
 
-              // Row 1
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TileWidget(value: tiles[0], onTap: () => handleTap(0)),
-                  TileWidget(value: tiles[1], onTap: () => handleTap(1)),
-                  TileWidget(value: tiles[2], onTap: () => handleTap(2)),
-                ],
-              ),
-
-              // Row 2
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TileWidget(value: tiles[3], onTap: () => handleTap(3)),
-                  TileWidget(value: tiles[4], onTap: () => handleTap(4)),
-                  TileWidget(value: tiles[5], onTap: () => handleTap(5)),
-                ],
-              ),
-
-              // Row 3
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TileWidget(value: tiles[6], onTap: () => handleTap(6)),
-                  TileWidget(value: tiles[7], onTap: () => handleTap(7)),
-                  TileWidget(value: tiles[8], onTap: () => handleTap(8)),
-                ],
+              SizedBox(
+                width: 260,
+                height: 260,
+                child: GridView.builder(
+                  itemCount: 9,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                  ),
+                  itemBuilder: (context, index) {
+                    return TileWidget(
+                      value: tiles[index],
+                      onTap: () => handleTap(index),
+                    );
+                  },
+                ),
               ),
 
               const SizedBox(height: 10),
