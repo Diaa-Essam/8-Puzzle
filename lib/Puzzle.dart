@@ -62,16 +62,18 @@ class _PuzzleState extends State<Puzzle> {
                     crossAxisCount: 3,
                   ),
                   itemBuilder: (context, index) {
+                    int emptyIndex = tiles.indexOf(0);
+                    bool isMovable = validMove(index, emptyIndex);
                     return TileWidget(
                       value: tiles[index],
-                      onTap: () => handleTap(index),
+                      onTap: () => isMovable ? handleTap(index) : null,
+                      isMovable: isMovable,
                     );
                   },
                 ),
               ),
 
               const SizedBox(height: 10),
-
               ElevatedButton(
                 onPressed: () {
                   setState(() {

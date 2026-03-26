@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class TileWidget extends StatelessWidget {
   final int value;
   final VoidCallback onTap;
+  final bool isMovable;
 
-  const TileWidget({super.key, required this.value, required this.onTap});
+  const TileWidget({
+    super.key,
+    required this.value,
+    required this.onTap,
+    required this.isMovable,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +32,11 @@ class TileWidget extends StatelessWidget {
                   ),
                 ],
           borderRadius: BorderRadius.circular(12),
-          color: value == 0 ? Colors.transparent : Colors.brown,
+          color: value == 0
+              ? Colors.transparent
+              : isMovable
+              ? Colors.orange
+              : Colors.brown,
           border: Border.all(),
         ),
         child: Center(
