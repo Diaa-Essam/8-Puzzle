@@ -66,7 +66,7 @@ class _PuzzleState extends State<Puzzle> {
                     bool isMovable = validMove(index, emptyIndex);
                     return TileWidget(
                       value: tiles[index],
-                      onTap: () => isMovable ? handleTap(index) : null,
+                      onTap: isMovable ? () => handleTap(index) : null,
                       isMovable: isMovable,
                     );
                   },
@@ -165,8 +165,17 @@ class _PuzzleState extends State<Puzzle> {
       barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("You Win 🎉"),
-        content: const Text("Congratulations!"),
+        title: const Text(
+          "You Win 🎉",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            "You solved it in $moves moves!\nTime: ${formatTime(time)}",
+            textAlign: TextAlign.center,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
