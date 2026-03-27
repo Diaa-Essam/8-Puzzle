@@ -76,16 +76,73 @@ class _PuzzleState extends State<Puzzle> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  setState(() {
-                    shuffle();
-                    _startCountUp();
-                  });
+                  showDialog(
+                    barrierDismissible: false,
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Are you sure?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("Cancel"),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.brown,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            setState(() {
+                              shuffle();
+                              _startCountUp();
+                            });
+                          },
+                          child: const Text("Confirm"),
+                        ),
+                      ],
+                    ),
+                  );
                 },
                 child: const Text("Restart"),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void showWinDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          "You Win 🎉",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            "You solved it in $moves moves!\nTime: ${formatTime(time)}",
+            textAlign: TextAlign.center,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                shuffle();
+                _startCountUp();
+              });
+            },
+            child: const Text("Restart"),
+          ),
+        ],
       ),
     );
   }
@@ -158,38 +215,6 @@ class _PuzzleState extends State<Puzzle> {
         time++;
       });
     });
-  }
-
-  void showWinDialog() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          "You Win 🎉",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            "You solved it in $moves moves!\nTime: ${formatTime(time)}",
-            textAlign: TextAlign.center,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                shuffle();
-                _startCountUp();
-              });
-            },
-            child: const Text("Restart"),
-          ),
-        ],
-      ),
-    );
   }
 
   String formatTime(int seconds) {
