@@ -12,6 +12,7 @@ class Puzzle extends StatefulWidget {
 
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  final List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   int moves = 0;
   int time = 0;
   Timer? timer;
@@ -74,39 +75,54 @@ class _PuzzleState extends State<Puzzle> {
               ),
 
               const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    barrierDismissible: false,
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Are you sure?"),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text("Cancel"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        barrierDismissible: false,
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Are you sure?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.brown,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                setState(() {
+                                  shuffle();
+                                  _startCountUp();
+                                });
+                              },
+                              child: const Text("Confirm"),
+                            ),
+                          ],
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.brown,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            setState(() {
-                              shuffle();
-                              _startCountUp();
-                            });
-                          },
-                          child: const Text("Confirm"),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                child: const Text("Restart"),
+                      );
+                    },
+                    child: const Text("Restart"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      int? hint = getBestMove();
+                      if (hint != null) {
+                        handleTap(hint);
+                      }
+                    },
+                    child: const Text("Hint"),
+                  ),
+                ],
               ),
             ],
           ),
@@ -225,5 +241,52 @@ class _PuzzleState extends State<Puzzle> {
     String s = remainingSeconds.toString().padLeft(2, '0');
 
     return "$m:$s";
+  }
+
+  int manhattanDistance(List<int> state) {
+    int distance = 0;
+
+    for (int i = 0; i < state.length; i++) {
+      int value = state[i];
+      if (value == 0) continue;
+
+      int currentRow = i ~/ 3;
+      int currentCol = i % 3;
+
+      int goalRow = (value - 1) ~/ 3;
+      int goalCol = (value - 1) % 3;
+
+      distance += (currentRow - goalRow).abs() + (currentCol - goalCol).abs();
+    }
+
+    return distance;
+  }
+
+  int? getBestMove() {
+    int emptyIndex = tiles.indexOf(0);
+    List<int> possibleMoves = [];
+
+    for (int i = 0; i < 9; i++) {
+      if (validMove(i, emptyIndex)) {
+        possibleMoves.add(i);
+      }
+    }
+
+    int bestMove = possibleMoves[0];
+    int bestScore = 9999;
+
+    for (int move in possibleMoves) {
+      List<int> temp = List.from(tiles);
+      swap(temp, move, emptyIndex);
+
+      int score = manhattanDistance(temp);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+
+    return bestMove;
   }
 }
