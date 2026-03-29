@@ -16,6 +16,7 @@ class _PuzzleState extends State<Puzzle> {
   int moves = 0;
   int time = 0;
   Timer? timer;
+  Set<String> visited = {};
 
   @override
   void initState() {
@@ -113,6 +114,7 @@ class _PuzzleState extends State<Puzzle> {
                     },
                     child: const Text("Restart"),
                   ),
+                  SizedBox(width: 15),
                   ElevatedButton(
                     onPressed: () {
                       int? hint = getBestMove();
@@ -121,6 +123,13 @@ class _PuzzleState extends State<Puzzle> {
                       }
                     },
                     child: const Text("Hint"),
+                  ),
+                  SizedBox(width: 15),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await autoSolve();
+                    },
+                    child: const Text("Auto Solver"),
                   ),
                 ],
               ),
@@ -177,6 +186,7 @@ class _PuzzleState extends State<Puzzle> {
         showWinDialog();
       }
     } else {
+      // We can put pop up here
       print("Not A Valid Move");
     }
   }
@@ -207,7 +217,7 @@ class _PuzzleState extends State<Puzzle> {
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
 
     while (winState()) {
-      for (int c = 0; c < 4; c++) {
+      for (int c = 0; c < 400; c++) {
         List<int> possibleMoves = [];
         int emptyIndex = tiles.indexOf(0);
 
@@ -272,12 +282,14 @@ class _PuzzleState extends State<Puzzle> {
       }
     }
 
-    int bestMove = possibleMoves[0];
+    int? bestMove;
     int bestScore = 9999;
 
     for (int move in possibleMoves) {
       List<int> temp = List.from(tiles);
       swap(temp, move, emptyIndex);
+
+      if (visited.contains(temp.toString())) continue;
 
       int score = manhattanDistance(temp);
 
@@ -288,5 +300,26 @@ class _PuzzleState extends State<Puzzle> {
     }
 
     return bestMove;
+  }
+
+  Future<void> autoSolve() async {
+    int safety = 200;
+
+    while (!winState() && safety > 0) {
+      if (!mounted) return;
+
+      visited.add(tiles.toString());
+
+      int? hint = getBestMove();
+      if (hint == null) break;
+
+      handleTap(hint);
+
+      if (winState()) break;
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      safety--;
+    }
   }
 }
