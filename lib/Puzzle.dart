@@ -17,6 +17,7 @@ class _PuzzleState extends State<Puzzle> {
   int time = 0;
   Timer? timer;
   Set<String> visited = {};
+  int bestScore = 1 << 30;
 
   @override
   void initState() {
@@ -42,98 +43,117 @@ class _PuzzleState extends State<Puzzle> {
       body: Container(
         color: Colors.brown[100],
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Moves: $moves\nTimer: ${formatTime(time)}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
 
-              SizedBox(
-                width: 260,
-                height: 260,
-                child: GridView.builder(
-                  itemCount: 9,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.brown,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  itemBuilder: (context, index) {
-                    int emptyIndex = tiles.indexOf(0);
-                    bool isMovable = validMove(index, emptyIndex);
-                    return TileWidget(
-                      value: tiles[index],
-                      onTap: isMovable ? () => handleTap(index) : null,
-                      isMovable: isMovable,
-                    );
-                  },
+                  child: Text(
+                    "Moves: $moves\nTimer: ${formatTime(time)}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 10),
 
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        barrierDismissible: false,
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Are you sure?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text("Cancel"),
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.brown,
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                setState(() {
-                                  shuffle();
-                                  _startCountUp();
-                                });
-                              },
-                              child: const Text("Confirm"),
-                            ),
-                          ],
+                SizedBox(
+                  width: 260,
+                  height: 260,
+                  child: GridView.builder(
+                    itemCount: 9,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
                         ),
+                    itemBuilder: (context, index) {
+                      int emptyIndex = tiles.indexOf(0);
+                      bool isMovable = validMove(index, emptyIndex);
+                      return TileWidget(
+                        value: tiles[index],
+                        onTap: isMovable ? () => handleTap(index) : null,
+                        isMovable: isMovable,
                       );
                     },
-                    child: const Text("Restart"),
                   ),
-                  SizedBox(width: 15),
-                  ElevatedButton(
-                    onPressed: () {
-                      int? hint = getBestMove();
-                      if (hint != null) {
-                        handleTap(hint);
-                      }
-                    },
-                    child: const Text("Hint"),
-                  ),
-                  SizedBox(width: 15),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await autoSolve();
-                    },
-                    child: const Text("Auto Solver"),
-                  ),
-                ],
-              ),
-            ],
+                ),
+
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                            barrierDismissible: false,
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Are you sure?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: const Text("Cancel"),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.brown,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    setState(() {
+                                      shuffle();
+                                      _startCountUp();
+                                    });
+                                  },
+                                  child: const Text("Confirm"),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: const Text("Restart"),
+                      ),
+                    ),
+                    SizedBox(width: 15),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          int? hint = getBestMove();
+                          if (hint != null) {
+                            handleTap(hint);
+                          }
+                        },
+                        child: const Text("Hint"),
+                      ),
+                    ),
+                    SizedBox(width: 15),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await autoSolve();
+                        },
+                        child: const Text("Auto Solver"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -212,6 +232,7 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   void shuffle() {
+    visited.clear();
     moves = 0;
     time = 0;
     tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
@@ -283,7 +304,7 @@ class _PuzzleState extends State<Puzzle> {
     }
 
     int? bestMove;
-    int bestScore = 9999;
+    int bestScore = 1 << 30;
 
     for (int move in possibleMoves) {
       List<int> temp = List.from(tiles);
@@ -303,7 +324,7 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   Future<void> autoSolve() async {
-    int safety = 200;
+    int safety = 1000;
 
     while (!winState() && safety > 0) {
       if (!mounted) return;
