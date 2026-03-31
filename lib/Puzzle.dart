@@ -10,6 +10,8 @@ class Puzzle extends StatefulWidget {
   State<Puzzle> createState() => _PuzzleState();
 }
 
+enum SolverType { greedy, bfs, aStar }
+
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   final List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
@@ -18,6 +20,8 @@ class _PuzzleState extends State<Puzzle> {
   Timer? timer;
   Set<String> visited = {};
   int bestScore = 1 << 30;
+
+  SolverType _selectedSolver = SolverType.greedy;
 
   @override
   void initState() {
@@ -133,7 +137,7 @@ class _PuzzleState extends State<Puzzle> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          int? hint = getBestMove();
+                          int? hint = getHint();
                           if (hint != null) {
                             handleTap(hint);
                           }
@@ -149,6 +153,34 @@ class _PuzzleState extends State<Puzzle> {
                         },
                         child: const Text("Auto Solver"),
                       ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Solver: "),
+                    DropdownButton<SolverType>(
+                      value: _selectedSolver,
+                      items: const [
+                        DropdownMenuItem(
+                          value: SolverType.greedy,
+                          child: Text("Greedy"),
+                        ),
+                        DropdownMenuItem(
+                          value: SolverType.bfs,
+                          child: Text("BFS"),
+                        ),
+                        DropdownMenuItem(
+                          value: SolverType.aStar,
+                          child: Text("A*"),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSolver = value!;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -293,7 +325,7 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
-  int? getBestMove() {
+  int? getGreedyMove() {
     int emptyIndex = tiles.indexOf(0);
     List<int> possibleMoves = [];
 
@@ -323,7 +355,28 @@ class _PuzzleState extends State<Puzzle> {
     return bestMove;
   }
 
+  int? getAStarMove() {
+    // TODO: implement A*
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(content: Text("A* coming soon")),
+    );
+    return null;
+  }
+
+  int? getBFSMove() {
+    // TODO: implement BFS
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(content: Text("BFS coming soon")),
+    );
+    return null;
+  }
+
   Future<void> autoSolve() async {
+    setState(() {
+      visited.clear();
+    });
     int safety = 1000;
 
     while (!winState() && safety > 0) {
@@ -331,7 +384,8 @@ class _PuzzleState extends State<Puzzle> {
 
       visited.add(tiles.toString());
 
-      int? hint = getBestMove();
+      int? hint = getHint();
+
       if (hint == null) break;
 
       handleTap(hint);
@@ -342,5 +396,21 @@ class _PuzzleState extends State<Puzzle> {
 
       safety--;
     }
+  }
+
+  int? getHint() {
+    int? hint;
+    switch (_selectedSolver) {
+      case SolverType.greedy:
+        hint = getGreedyMove();
+        break;
+      case SolverType.bfs:
+        hint = getBFSMove();
+        break;
+      case SolverType.aStar:
+        hint = getAStarMove();
+        break;
+    }
+    return hint;
   }
 }
