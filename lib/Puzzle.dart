@@ -22,6 +22,7 @@ class _PuzzleState extends State<Puzzle> {
 
   Set<String> visited = {};
   List<int>? _lastState;
+  bool useManhattan = true;
 
   SolverType _selectedSolver = SolverType.greedy;
 
@@ -329,7 +330,9 @@ class _PuzzleState extends State<Puzzle> {
       if (_lastState != null && listEquals(temp, _lastState!)) continue;
       if (visited.contains(temp.toString())) continue;
 
-      int score = manhattanDistance(temp);
+      int score = useManhattan
+          ? manhattanDistance(temp)
+          : eculideanDistance(temp).toInt();
 
       if (score < bestScore) {
         bestScore = score;
