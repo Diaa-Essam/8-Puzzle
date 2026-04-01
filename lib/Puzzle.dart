@@ -1,7 +1,9 @@
+import 'dart:collection';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // for listEquals
+import 'package:myapp/Node.dart';
 import 'Tile.dart';
 
 class Puzzle extends StatefulWidget {
@@ -258,7 +260,7 @@ class _PuzzleState extends State<Puzzle> {
 
     tiles = List.from(goal);
 
-    for (int c = 0; c < 400; c++) {
+    for (int c = 0; c < 10; c++) {
       List<int> possibleMoves = [];
       int emptyIndex = tiles.indexOf(0);
 
@@ -334,6 +336,22 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
+  List<List<int>> getNeighbors(List<int> state) {
+    List<List<int>> result = [];
+
+    int emptyIndex = state.indexOf(0);
+
+    for (int i = 0; i < state.length; i++) {
+      if (validMove(i, emptyIndex)) {
+        List<int> newState = List.from(state);
+        swap(newState, i, emptyIndex);
+        result.add(newState);
+      }
+    }
+
+    return result;
+  }
+
   int? getGreedyMove() {
     int emptyIndex = tiles.indexOf(0);
     List<int> possibleMoves = [];
@@ -376,7 +394,59 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   int? getBFSMove() {
-    return null; // clean placeholder
+    Queue<Node> queue = Queue();
+    Set<String> visited = {};
+    Node start = Node(cost: 0, state: List.from(tiles), parent: null);
+
+    queue.add(start);
+    visited.add(start.state.toString());
+    List<List<int>> path = [];
+    while (queue.isNotEmpty) {
+      Node currentNode = queue.removeFirst();
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+
+        while (temp != null) {
+          path.add(temp.state);
+          temp = temp.parent;
+        }
+        path = path.reversed.toList();
+        break;
+      }
+
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          visited.add(key);
+          queue.add(
+            Node(
+              cost: currentNode.cost + 1,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+        }
+      }
+    }
+
+    if (path.length > 1) {
+      List<int> nextState = path[1];
+
+      int emptyIndex = tiles.indexOf(0);
+      for (int i = 0; i < 9; i++) {
+        if (tiles[i] != nextState[i]) {
+          if (validMove(i, emptyIndex)) {
+            return i;
+          }
+        }
+      }
+    }
   }
 
   Future<void> autoSolve() async {
@@ -388,7 +458,7 @@ class _PuzzleState extends State<Puzzle> {
 
       visited.add(tiles.toString());
 
-      int? hint = getHint();
+      int? hint = getHint(); // This decide based on the _selectedSolver
 
       if (hint == null) {
         // fallback random
@@ -449,21 +519,5 @@ class _PuzzleState extends State<Puzzle> {
         ],
       ),
     );
-
-    List<List<int>> getNeighbors(List<int> state) {
-      List<List<int>> result = [];
-
-      int emptyIndex = state.indexOf(0);
-
-      for (int i = 0; i < state.length; i++) {
-        if (validMove(i, emptyIndex)) {
-          List<int> newState = List.from(state);
-          swap(newState, i, emptyIndex);
-          result.add(newState);
-        }
-      }
-
-      return result;
-    }
   }
 }
