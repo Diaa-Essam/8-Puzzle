@@ -449,5 +449,21 @@ class _PuzzleState extends State<Puzzle> {
         ],
       ),
     );
+
+    List<List<int>> getNeighbors(List<int> state) {
+      List<List<int>> result = [];
+
+      int emptyIndex = state.indexOf(0);
+
+      for (int i = 0; i < state.length; i++) {
+        if (validMove(i, emptyIndex)) {
+          List<int> newState = List.from(state);
+          swap(newState, i, emptyIndex);
+          result.add(newState);
+        }
+      }
+
+      return result;
+    }
   }
 }
