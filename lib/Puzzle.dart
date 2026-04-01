@@ -181,6 +181,30 @@ class _PuzzleState extends State<Puzzle> {
                     ),
                   ],
                 ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Heuristic: "),
+                    DropdownButton<bool>(
+                      value: useManhattan,
+                      items: const [
+                        DropdownMenuItem(
+                          value: true,
+                          child: Text("Manhanttan"),
+                        ),
+                        DropdownMenuItem(
+                          value: false,
+                          child: Text("Euclidean"),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          useManhattan = value!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
