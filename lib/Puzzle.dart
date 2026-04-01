@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // for listEquals
 import 'Tile.dart';
 
 class Puzzle extends StatefulWidget {
@@ -18,8 +19,9 @@ class _PuzzleState extends State<Puzzle> {
   int moves = 0;
   int time = 0;
   Timer? timer;
+
   Set<String> visited = {};
-  int bestScore = 1 << 30;
+  List<int>? _lastState;
 
   SolverType _selectedSolver = SolverType.greedy;
 
@@ -51,10 +53,9 @@ class _PuzzleState extends State<Puzzle> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-
               children: [
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.brown,
                     borderRadius: BorderRadius.circular(12),
@@ -94,8 +95,6 @@ class _PuzzleState extends State<Puzzle> {
 
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-
                   children: [
                     Expanded(
                       child: ElevatedButton(
@@ -107,9 +106,7 @@ class _PuzzleState extends State<Puzzle> {
                               title: const Text("Are you sure?"),
                               actions: [
                                 TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
+                                  onPressed: () => Navigator.of(context).pop(),
                                   child: const Text("Cancel"),
                                 ),
                                 ElevatedButton(
@@ -133,19 +130,17 @@ class _PuzzleState extends State<Puzzle> {
                         child: const Text("Restart"),
                       ),
                     ),
-                    SizedBox(width: 15),
+                    const SizedBox(width: 15),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           int? hint = getHint();
-                          if (hint != null) {
-                            handleTap(hint);
-                          }
+                          if (hint != null) handleTap(hint);
                         },
                         child: const Text("Hint"),
                       ),
                     ),
-                    SizedBox(width: 15),
+                    const SizedBox(width: 15),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
@@ -156,6 +151,7 @@ class _PuzzleState extends State<Puzzle> {
                     ),
                   ],
                 ),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -192,43 +188,12 @@ class _PuzzleState extends State<Puzzle> {
     );
   }
 
-  void showWinDialog() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          "You Win 🎉",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            "You solved it in $moves moves!\nTime: ${formatTime(time)}",
-            textAlign: TextAlign.center,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                shuffle();
-                _startCountUp();
-              });
-            },
-            child: const Text("Restart"),
-          ),
-        ],
-      ),
-    );
-  }
-
   void handleTap(int tileIndex) {
     int emptyIndex = tiles.indexOf(0);
 
     if (validMove(tileIndex, emptyIndex)) {
       setState(() {
+        _lastState = List.from(tiles);
         swap(tiles, tileIndex, emptyIndex);
         moves++;
       });
@@ -237,9 +202,6 @@ class _PuzzleState extends State<Puzzle> {
         timer?.cancel();
         showWinDialog();
       }
-    } else {
-      // We can put pop up here
-      print("Not A Valid Move");
     }
   }
 
@@ -265,24 +227,24 @@ class _PuzzleState extends State<Puzzle> {
 
   void shuffle() {
     visited.clear();
+    _lastState = null;
     moves = 0;
     time = 0;
-    tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
 
-    while (winState()) {
-      for (int c = 0; c < 400; c++) {
-        List<int> possibleMoves = [];
-        int emptyIndex = tiles.indexOf(0);
+    tiles = List.from(goal);
 
-        for (int i = 0; i < 9; i++) {
-          if (validMove(i, emptyIndex)) {
-            possibleMoves.add(i);
-          }
+    for (int c = 0; c < 400; c++) {
+      List<int> possibleMoves = [];
+      int emptyIndex = tiles.indexOf(0);
+
+      for (int i = 0; i < 9; i++) {
+        if (validMove(i, emptyIndex)) {
+          possibleMoves.add(i);
         }
-
-        int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
-        swap(tiles, pickedTile, emptyIndex);
       }
+
+      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
+      swap(tiles, pickedTile, emptyIndex);
     }
   }
 
@@ -325,6 +287,27 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
+  double eculideanDistance(List<int> state) {
+    double distance = 0;
+
+    for (int i = 0; i < state.length; i++) {
+      int value = state[i];
+      if (value == 0) continue;
+
+      int currentRow = i ~/ 3;
+      int currentCol = i % 3;
+
+      int goalRow = (value - 1) ~/ 3;
+      int goalCol = (value - 1) % 3;
+
+      distance += sqrt(
+        pow(currentRow - goalRow, 2) + pow(currentCol - goalCol, 2),
+      );
+    }
+
+    return distance;
+  }
+
   int? getGreedyMove() {
     int emptyIndex = tiles.indexOf(0);
     List<int> possibleMoves = [];
@@ -342,6 +325,7 @@ class _PuzzleState extends State<Puzzle> {
       List<int> temp = List.from(tiles);
       swap(temp, move, emptyIndex);
 
+      if (_lastState != null && listEquals(temp, _lastState!)) continue;
       if (visited.contains(temp.toString())) continue;
 
       int score = manhattanDistance(temp);
@@ -352,65 +336,90 @@ class _PuzzleState extends State<Puzzle> {
       }
     }
 
+    if (bestMove == null && possibleMoves.isNotEmpty) {
+      bestMove = possibleMoves[Random().nextInt(possibleMoves.length)];
+    }
+
     return bestMove;
   }
 
   int? getAStarMove() {
-    // TODO: implement A*
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(content: Text("A* coming soon")),
-    );
-    return null;
+    return null; // clean placeholder
   }
 
   int? getBFSMove() {
-    // TODO: implement BFS
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(content: Text("BFS coming soon")),
-    );
-    return null;
+    return null; // clean placeholder
   }
 
   Future<void> autoSolve() async {
-    setState(() {
-      visited.clear();
-    });
-    int safety = 1000;
+    visited.clear();
+    int maxSteps = 1000;
 
-    while (!winState() && safety > 0) {
+    while (!winState() && maxSteps > 0) {
       if (!mounted) return;
 
       visited.add(tiles.toString());
 
       int? hint = getHint();
 
-      if (hint == null) break;
+      if (hint == null) {
+        // fallback random
+        int emptyIndex = tiles.indexOf(0);
+        List<int> possibleMoves = [];
+
+        for (int i = 0; i < 9; i++) {
+          if (validMove(i, emptyIndex)) {
+            possibleMoves.add(i);
+          }
+        }
+
+        if (possibleMoves.isEmpty) break;
+
+        hint = possibleMoves[Random().nextInt(possibleMoves.length)];
+      }
 
       handleTap(hint);
 
       if (winState()) break;
 
       await Future.delayed(const Duration(milliseconds: 300));
-
-      safety--;
+      maxSteps--;
     }
   }
 
   int? getHint() {
-    int? hint;
     switch (_selectedSolver) {
       case SolverType.greedy:
-        hint = getGreedyMove();
-        break;
+        return getGreedyMove();
       case SolverType.bfs:
-        hint = getBFSMove();
-        break;
+        return getBFSMove();
       case SolverType.aStar:
-        hint = getAStarMove();
-        break;
+        return getAStarMove();
     }
-    return hint;
+  }
+
+  void showWinDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("You Win 🎉"),
+        content: Text(
+          "You solved it in $moves moves!\nTime: ${formatTime(time)}",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                shuffle();
+                _startCountUp();
+              });
+            },
+            child: const Text("Restart"),
+          ),
+        ],
+      ),
+    );
   }
 }
