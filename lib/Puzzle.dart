@@ -287,6 +287,7 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
+  // Testing
   double eculideanDistance(List<int> state) {
     double distance = 0;
 
