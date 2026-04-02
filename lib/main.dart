@@ -8,6 +8,9 @@ class AmigoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: Puzzle());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Puzzle(),
+    ); //hello diaa
   }
 }
