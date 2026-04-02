@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // for listEquals
 import 'package:myapp/Node.dart';
 import 'Tile.dart';
+import 'package:collection/collection.dart';
 
 class Puzzle extends StatefulWidget {
   const Puzzle({super.key});
@@ -390,7 +391,38 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   int? getAStarMove() {
-    return null; // clean placeholder
+    int emptyIndex = tiles.indexOf(0);
+    List<int> possibleMoves = [];
+
+    for (int i = 0; i < 9; i++) {
+      if (validMove(i, emptyIndex)) {
+        possibleMoves.add(i);
+      }
+    }
+
+    int? bestMove;
+    int bestScore = 1 << 30;
+
+    for (int move in possibleMoves) {
+      List<int> temp = List.from(tiles);
+      swap(temp, move, emptyIndex);
+
+      if (_lastState != null && listEquals(temp, _lastState!)) continue;
+      if (visited.contains(temp.toString())) continue;
+
+      int h = useManhattan
+          ? manhattanDistance(temp)
+          : eculideanDistance(temp).toInt();
+      int g = 1;
+
+      int f = g + h;
+
+      if (f < bestScore) {
+        bestScore = f;
+        bestMove = move;
+      }
+    }
+    return bestMove; // clean placeholder
   }
 
   int? getBFSMove() {
@@ -401,14 +433,43 @@ class _PuzzleState extends State<Puzzle> {
     return null;
   }
 
+  List<List<int>> getAstarPath() {
+    List<List<int>> path = [];
+    Set<String> visited = {};
+    PriorityQueue<Node> pq = PriorityQueue<Node>(
+      (a, b) => a.fScore.compareTo(b.fScore),
+    );
+
+    Node start = Node(
+      state: List.from(tiles),
+      parent: null,
+      cost: 0,
+      fScore: useManhattan
+          ? manhattanDistance(tiles).toDouble()
+          : eculideanDistance(tiles),
+    );
+
+    pq.add(start);
+    visited.add(start.toString());
+
+    while (pq.isNotEmpty) {}
+    return path;
+  }
+
   List<List<int>> getBFSPath() {
+    List<List<int>> path = [];
     Queue<Node> queue = Queue();
     Set<String> visited = {};
-    Node start = Node(cost: 0, state: List.from(tiles), parent: null);
+    Node start = Node(
+      fScore: 0,
+      cost: 0,
+      state: List.from(tiles),
+      parent: null,
+    );
 
     queue.add(start);
     visited.add(start.state.toString());
-    List<List<int>> path = [];
+
     while (queue.isNotEmpty) {
       Node currentNode = queue.removeFirst();
       List<int> current = currentNode.state;
@@ -434,6 +495,7 @@ class _PuzzleState extends State<Puzzle> {
           visited.add(key);
           queue.add(
             Node(
+              fScore: currentNode.cost + 1,
               cost: currentNode.cost + 1,
               state: neighbor,
               parent: currentNode,
