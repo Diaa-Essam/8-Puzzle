@@ -381,6 +381,7 @@ class _PuzzleState extends State<Puzzle> {
         bestScore = score;
         bestMove = move;
       }
+
     }
 
     if (bestMove == null && possibleMoves.isNotEmpty) {
