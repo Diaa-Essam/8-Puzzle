@@ -260,7 +260,7 @@ class _PuzzleState extends State<Puzzle> {
 
     tiles = List.from(goal);
 
-    for (int c = 0; c < 10; c++) {
+    for (int c = 0; c < 100; c++) {
       List<int> possibleMoves = [];
       int emptyIndex = tiles.indexOf(0);
 
@@ -394,6 +394,14 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   int? getBFSMove() {
+    List<List<int>> path = getBFSPath();
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
+  }
+
+  List<List<int>> getBFSPath() {
     Queue<Node> queue = Queue();
     Set<String> visited = {};
     Node start = Node(cost: 0, state: List.from(tiles), parent: null);
@@ -415,7 +423,7 @@ class _PuzzleState extends State<Puzzle> {
           temp = temp.parent;
         }
         path = path.reversed.toList();
-        break;
+        return path;
       }
 
       List<List<int>> neighbors = getNeighbors(current);
@@ -434,26 +442,18 @@ class _PuzzleState extends State<Puzzle> {
         }
       }
     }
-
-    if (path.length > 1) {
-      List<int> nextState = path[1];
-
-      int emptyIndex = tiles.indexOf(0);
-      for (int i = 0; i < 9; i++) {
-        if (tiles[i] != nextState[i]) {
-          if (validMove(i, emptyIndex)) {
-            return i;
-          }
-        }
-      }
-    }
+    return [];
   }
 
   Future<void> autoSolve() async {
     visited.clear();
-    int maxSteps = 1000;
 
-    while (!winState() && maxSteps > 0) {
+    if (_selectedSolver == SolverType.bfs) {
+      await solveWithBFSPath();
+      return;
+    }
+
+    while (!winState()) {
       if (!mounted) return;
 
       visited.add(tiles.toString());
@@ -481,7 +481,25 @@ class _PuzzleState extends State<Puzzle> {
       if (winState()) break;
 
       await Future.delayed(const Duration(milliseconds: 300));
-      maxSteps--;
+    }
+  }
+
+  Future<void> solveWithBFSPath() async {
+    List<List<int>> path = getBFSPath();
+
+    for (int i = 1; i < path.length; i++) {
+      if (!mounted) return;
+
+      setState(() {
+        tiles = List.from(path[i]);
+        moves++;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
     }
   }
 
