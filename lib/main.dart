@@ -11,6 +11,6 @@ class AmigoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Puzzle(),
-    ); //hello diaa
+    ); //hello diaa, hi Nashaat
   }
 }
