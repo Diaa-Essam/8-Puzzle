@@ -8,7 +8,7 @@ import 'package:myapp/controller_layer/Node.dart';
 import 'package:myapp/controller_layer/SolverType.dart';
 
 class Agentscontroller {
-  //initial and final states
+  //initial and final states 
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int>? _lastState;
@@ -243,7 +243,7 @@ class Agentscontroller {
         hint = possibleMoves[Random().nextInt(possibleMoves.length)];
       }
 
-      handleTap(hint, setState, showWinDialog);
+      handleTap(hint,setState,showWinDialog);
 
       if (winState()) break;
 
@@ -329,11 +329,7 @@ class Agentscontroller {
     return true;
   }
 
-  void handleTap(
-    int tileIndex,
-    VoidCallback setState,
-    VoidCallback showWinDialog,
-  ) {
+  void handleTap(int tileIndex, VoidCallback setState,VoidCallback showWinDialog) {
     int emptyIndex = tiles.indexOf(0);
 
     if (validMove(tileIndex, emptyIndex)) {

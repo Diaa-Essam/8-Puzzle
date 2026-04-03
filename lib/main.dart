@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/presentation_layer/Puzzle.dart';
+import 'package:myapp/Puzzle.dart';
 
 void main() => runApp(const AmigoApp());
 
@@ -11,6 +11,6 @@ class AmigoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Puzzle(),
-    ); //hello diaa
+    ); //hello diaa, hi Nashaat
   }
 }

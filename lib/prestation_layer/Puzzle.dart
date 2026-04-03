@@ -1,12 +1,11 @@
-import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
-
-import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart'; // for listEquals
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // for listEquals
 import 'package:myapp/controller_layer/Node.dart';
-import 'package:myapp/prestation_layer/Tile.dart';
+import 'Tile.dart';
+import 'package:collection/collection.dart';
 
 class Puzzle extends StatefulWidget {
   const Puzzle({super.key});
