@@ -23,6 +23,9 @@ class _PuzzleState extends State<Puzzle> {
   int moves = 0;
   int time = 0;
   Timer? timer;
+  int nodesExpanded = 0;
+  int pathLength = 0;
+  int executionTime = 0;
 
   Set<String> visited = {};
   List<int>? _lastState;
@@ -355,7 +358,7 @@ class _PuzzleState extends State<Puzzle> {
     return result;
   }
 
-  int? getGreedyMove() {
+  int? getGreedyMove(bool useManhattan) {
     int emptyIndex = tiles.indexOf(0);
     List<int> possibleMoves = [];
 
@@ -393,7 +396,7 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   int? getAStarMove() {
-    List<List<int>> path = getAstarPath();
+    List<List<int>> path = getAstarPath(useManhattan);
     if (path.length > 1) {
       return path[1].indexOf(0);
     }
@@ -415,10 +418,11 @@ class _PuzzleState extends State<Puzzle> {
       temp = temp.parent;
     }
     path = path.reversed.toList();
+    pathLength = path.length - 1;
     return path;
   }
 
-  List<List<int>> getAstarPath() {
+  List<List<int>> getAstarPath(bool useManhattan) {
     Set<String> visited = {};
     PriorityQueue<Node> pq = PriorityQueue<Node>(
       (a, b) => a.fScore.compareTo(b.fScore),
@@ -438,6 +442,7 @@ class _PuzzleState extends State<Puzzle> {
 
     while (pq.isNotEmpty) {
       Node currentNode = pq.removeFirst();
+      nodesExpanded++;
       List<int> current = currentNode.state;
 
       if (listEquals(current, goal)) {
@@ -486,6 +491,7 @@ class _PuzzleState extends State<Puzzle> {
 
     while (queue.isNotEmpty) {
       Node currentNode = queue.removeFirst();
+      nodesExpanded++;
       List<int> current = currentNode.state;
 
       if (listEquals(current, goal)) {
@@ -520,6 +526,12 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   Future<void> autoSolve() async {
+    nodesExpanded = 0;
+    pathLength = 0;
+    executionTime = 0;
+
+    final startTime = DateTime.now();
+
     visited.clear();
 
     if (_selectedSolver == SolverType.bfs) {
@@ -582,7 +594,7 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   Future<void> solveWithAStarPath() async {
-    List<List<int>> path = getAstarPath();
+    List<List<int>> path = getAstarPath(useManhattan);
 
     for (int i = 1; i < path.length; i++) {
       if (!mounted) return;
@@ -603,7 +615,7 @@ class _PuzzleState extends State<Puzzle> {
   int? getHint() {
     switch (_selectedSolver) {
       case SolverType.greedy:
-        return getGreedyMove();
+        return getGreedyMove(useManhattan);
       case SolverType.bfs:
         return getBFSMove();
       case SolverType.AStar:
