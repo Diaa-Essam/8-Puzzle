@@ -8,7 +8,7 @@ import 'package:myapp/controller_layer/Node.dart';
 import 'package:myapp/controller_layer/SolverType.dart';
 
 class Agentscontroller {
-  //initial and final states
+  //initial and final states and local variables
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int>? _lastState;
