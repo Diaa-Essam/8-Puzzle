@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/Puzzle.dart';
+import 'package:myapp/prestation_layer/Puzzle.dart';
 
 void main() => runApp(const AmigoApp());
 

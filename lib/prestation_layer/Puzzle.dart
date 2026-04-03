@@ -3,7 +3,7 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // for listEquals
-import 'package:myapp/Node.dart';
+import 'package:myapp/controller_layer/Node.dart';
 import 'Tile.dart';
 import 'package:collection/collection.dart';
 
@@ -381,7 +381,6 @@ class _PuzzleState extends State<Puzzle> {
         bestScore = score;
         bestMove = move;
       }
-
     }
 
     if (bestMove == null && possibleMoves.isNotEmpty) {
