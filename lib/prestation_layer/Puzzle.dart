@@ -14,7 +14,7 @@ class Puzzle extends StatefulWidget {
   State<Puzzle> createState() => _PuzzleState();
 }
 
-enum SolverType { greedy, bfs, aStar }
+enum SolverType { greedy, bfs, AStar }
 
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
@@ -172,7 +172,7 @@ class _PuzzleState extends State<Puzzle> {
                           child: Text("BFS"),
                         ),
                         DropdownMenuItem(
-                          value: SolverType.aStar,
+                          value: SolverType.AStar,
                           child: Text("A*"),
                         ),
                       ],
@@ -215,6 +215,7 @@ class _PuzzleState extends State<Puzzle> {
       ),
     );
   }
+  //====================================== Logic Section ======================================
 
   void handleTap(int tileIndex) {
     int emptyIndex = tiles.indexOf(0);
@@ -391,38 +392,11 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   int? getAStarMove() {
-    int emptyIndex = tiles.indexOf(0);
-    List<int> possibleMoves = [];
-
-    for (int i = 0; i < 9; i++) {
-      if (validMove(i, emptyIndex)) {
-        possibleMoves.add(i);
-      }
+    List<List<int>> path = getAstarPath();
+    if (path.length > 1) {
+      return path[1].indexOf(0);
     }
-
-    int? bestMove;
-    int bestScore = 1 << 30;
-
-    for (int move in possibleMoves) {
-      List<int> temp = List.from(tiles);
-      swap(temp, move, emptyIndex);
-
-      if (_lastState != null && listEquals(temp, _lastState!)) continue;
-      if (visited.contains(temp.toString())) continue;
-
-      int h = useManhattan
-          ? manhattanDistance(temp)
-          : eculideanDistance(temp).toInt();
-      int g = 1;
-
-      int f = g + h;
-
-      if (f < bestScore) {
-        bestScore = f;
-        bestMove = move;
-      }
-    }
-    return bestMove; // clean placeholder
+    return null;
   }
 
   int? getBFSMove() {
@@ -431,6 +405,16 @@ class _PuzzleState extends State<Puzzle> {
       return path[1].indexOf(0);
     }
     return null;
+  }
+
+  List<List<int>> constructedPath(Node? temp) {
+    List<List<int>> path = [];
+    while (temp != null) {
+      path.add(temp.state);
+      temp = temp.parent;
+    }
+    path = path.reversed.toList();
+    return path;
   }
 
   List<List<int>> getAstarPath() {
@@ -450,10 +434,41 @@ class _PuzzleState extends State<Puzzle> {
     );
 
     pq.add(start);
-    visited.add(start.toString());
+    visited.add(start.state.toString());
 
-    while (pq.isNotEmpty) {}
-    return path;
+    while (pq.isNotEmpty) {
+      Node currentNode = pq.removeFirst();
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+        return constructedPath(temp);
+      }
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          int g = currentNode.cost + 1;
+          int h = useManhattan
+              ? manhattanDistance(neighbor)
+              : eculideanDistance(neighbor).toInt();
+
+          pq.add(
+            Node(
+              fScore: (g + h).toDouble(),
+              cost: g,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+          visited.add(key);
+        }
+      }
+    }
+    return [];
   }
 
   List<List<int>> getBFSPath() {
@@ -479,12 +494,7 @@ class _PuzzleState extends State<Puzzle> {
 
         Node? temp = goalNode;
 
-        while (temp != null) {
-          path.add(temp.state);
-          temp = temp.parent;
-        }
-        path = path.reversed.toList();
-        return path;
+        return constructedPath(temp);
       }
 
       List<List<int>> neighbors = getNeighbors(current);
@@ -492,15 +502,18 @@ class _PuzzleState extends State<Puzzle> {
         String key = neighbor.toString();
 
         if (!visited.contains(key)) {
-          visited.add(key);
+          int g = currentNode.cost + 1;
+          int f = g;
+
           queue.add(
             Node(
-              fScore: currentNode.cost + 1,
-              cost: currentNode.cost + 1,
+              fScore: f.toDouble(),
+              cost: g,
               state: neighbor,
               parent: currentNode,
             ),
           );
+          visited.add(key);
         }
       }
     }
@@ -512,6 +525,10 @@ class _PuzzleState extends State<Puzzle> {
 
     if (_selectedSolver == SolverType.bfs) {
       await solveWithBFSPath();
+      return;
+    }
+    if (_selectedSolver == SolverType.AStar) {
+      await solveWithAStarPath();
       return;
     }
 
@@ -565,13 +582,32 @@ class _PuzzleState extends State<Puzzle> {
     }
   }
 
+  Future<void> solveWithAStarPath() async {
+    List<List<int>> path = getAstarPath();
+
+    for (int i = 1; i < path.length; i++) {
+      if (!mounted) return;
+
+      setState(() {
+        tiles = List.from(path[i]);
+        moves++;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+    }
+  }
+
   int? getHint() {
     switch (_selectedSolver) {
       case SolverType.greedy:
         return getGreedyMove();
       case SolverType.bfs:
         return getBFSMove();
-      case SolverType.aStar:
+      case SolverType.AStar:
         return getAStarMove();
     }
   }
