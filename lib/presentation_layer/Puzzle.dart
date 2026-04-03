@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart'; // for listEquals
 import 'package:flutter/material.dart';
 import 'package:myapp/controller_layer/Node.dart';
-import 'package:myapp/prestation_layer/Tile.dart';
+import 'package:myapp/presentation_layer/TileWidget.dart';
 
 class Puzzle extends StatefulWidget {
   const Puzzle({super.key});
@@ -419,7 +419,6 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   List<List<int>> getAstarPath() {
-    List<List<int>> path = [];
     Set<String> visited = {};
     PriorityQueue<Node> pq = PriorityQueue<Node>(
       (a, b) => a.fScore.compareTo(b.fScore),
@@ -473,7 +472,6 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   List<List<int>> getBFSPath() {
-    List<List<int>> path = [];
     Queue<Node> queue = Queue();
     Set<String> visited = {};
     Node start = Node(
