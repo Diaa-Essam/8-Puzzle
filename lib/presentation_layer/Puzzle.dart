@@ -3,7 +3,7 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // for listEquals
-import 'package:myapp/Node.dart';
+import 'package:myapp/controller_layer/Node.dart';
 import 'Tile.dart';
 import 'package:collection/collection.dart';
 
