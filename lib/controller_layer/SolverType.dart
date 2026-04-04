@@ -1,1 +1,1 @@
-enum SolverType { greedy, bfs, aStar }enum SolverType { greedy, bfs, aStar,dfs }
+enum SolverType { greedy, bfs, aStar }enum SolverType { greedy, bfs, aStar,dfs }enum SolverType { greedy, bfs, aStar,dfs }
