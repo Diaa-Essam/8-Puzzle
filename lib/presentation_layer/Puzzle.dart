@@ -59,22 +59,6 @@ class _PuzzleState extends State<Puzzle> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                // Container(
-                //   padding: const EdgeInsets.all(10),
-                //   decoration: BoxDecoration(
-                //     color: Colors.brown[300],
-                //     borderRadius: BorderRadius.circular(12),
-                //   ),
-                //   child: Text(
-                //     "Nodes Expanded:${_controller.nodesExpanded}\nPath Length: ${_controller.pathLength}\nExecution Time: ${_controller.executionTime} ms",
-                //     style: const TextStyle(
-                //       fontSize: 16,
-                //       fontWeight: FontWeight.bold,
-                //       color: Colors.white,
-                //     ),
-                //   ),
-                // ),
                 SizedBox(
                   width: 260,
                   height: 260,
@@ -268,6 +252,7 @@ class _PuzzleState extends State<Puzzle> {
     );
   }
 
+  // fully UI
   void _startCountUp() {
     _controller.timer?.cancel();
 

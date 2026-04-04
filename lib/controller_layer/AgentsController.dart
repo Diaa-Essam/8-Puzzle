@@ -23,7 +23,7 @@ class Agentscontroller {
   int pathLength = 0;
   int executionTime = 0;
 
-  //bfs
+  //======================================================== bfs
   int? getBFSMove() {
     List<List<int>> path = getBFSPath();
     if (path.length > 1) {
@@ -105,7 +105,7 @@ class Agentscontroller {
     }
   }
 
-  //greedy
+  //==========================================================================greedy
 
   int? getGreedyMove() {
     List<List<int>> path = getGreedyPath(useManhattan);
@@ -168,7 +168,7 @@ class Agentscontroller {
     return [];
   }
 
-  //A*
+  //========================================================================A*
 
   int? getAStarMove() {
     List<List<int>> path = getAstarPath(useManhattan);
@@ -265,10 +265,11 @@ class Agentscontroller {
     return null;
   }
 
+  // Complete
   List<List<int>> getDFSPath() {
     List<Node> stack = [];
     Set<String> visited = {};
-    int maxDepth = 31;
+    int maxDepth = 31; // double check
 
     Node start = Node(
       fScore: 0,
