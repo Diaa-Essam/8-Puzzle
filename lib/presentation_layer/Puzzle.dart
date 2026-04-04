@@ -15,11 +15,12 @@ class Puzzle extends StatefulWidget {
   State<Puzzle> createState() => _PuzzleState();
 }
 
-enum SolverType { greedy, bfs, AStar }
+enum SolverType { Greedy, BFS, Astar, DFS }
 
 class _PuzzleState extends State<Puzzle> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   final List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  bool _isSolving = false;
   int moves = 0;
   int time = 0;
   Timer? timer;
@@ -31,12 +32,11 @@ class _PuzzleState extends State<Puzzle> {
   List<int>? _lastState;
   bool useManhattan = true;
 
-  SolverType _selectedSolver = SolverType.greedy;
+  SolverType _selectedSolver = SolverType.BFS;
 
   @override
   void initState() {
     shuffle();
-    _startCountUp();
     super.initState();
   }
 
@@ -140,6 +140,7 @@ class _PuzzleState extends State<Puzzle> {
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                     setState(() {
+                                      _isSolving = false;
                                       shuffle();
                                       _startCountUp();
                                     });
@@ -183,15 +184,20 @@ class _PuzzleState extends State<Puzzle> {
                       value: _selectedSolver,
                       items: const [
                         DropdownMenuItem(
-                          value: SolverType.greedy,
-                          child: Text("Greedy"),
-                        ),
-                        DropdownMenuItem(
-                          value: SolverType.bfs,
+                          value: SolverType.BFS,
                           child: Text("BFS"),
                         ),
                         DropdownMenuItem(
-                          value: SolverType.AStar,
+                          value: SolverType.DFS,
+                          child: Text("DFS"),
+                        ),
+                        DropdownMenuItem(
+                          value: SolverType.Greedy,
+                          child: Text("Greedy"),
+                        ),
+
+                        DropdownMenuItem(
+                          value: SolverType.Astar,
                           child: Text("A*"),
                         ),
                       ],
@@ -239,6 +245,9 @@ class _PuzzleState extends State<Puzzle> {
   void handleTap(int tileIndex) {
     int emptyIndex = tiles.indexOf(0);
 
+    if (moves == 0) {
+      _startCountUp();
+    }
     if (validMove(tileIndex, emptyIndex)) {
       setState(() {
         _lastState = List.from(tiles);
@@ -377,41 +386,12 @@ class _PuzzleState extends State<Puzzle> {
     return result;
   }
 
-  int? getGreedyMove(bool useManhattan) {
-    int emptyIndex = tiles.indexOf(0);
-    List<int> possibleMoves = [];
-
-    for (int i = 0; i < 9; i++) {
-      if (validMove(i, emptyIndex)) {
-        possibleMoves.add(i);
-      }
+  int? getGreedyMove() {
+    List<List<int>> path = getGreedyPath(useManhattan);
+    if (path.length > 1) {
+      return path[1].indexOf(0);
     }
-
-    int? bestMove;
-    int bestScore = 1 << 30;
-
-    for (int move in possibleMoves) {
-      List<int> temp = List.from(tiles);
-      swap(temp, move, emptyIndex);
-
-      if (_lastState != null && listEquals(temp, _lastState!)) continue;
-      if (visited.contains(temp.toString())) continue;
-
-      int score = useManhattan
-          ? manhattanDistance(temp)
-          : eculideanDistance(temp).toInt();
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-
-    if (bestMove == null && possibleMoves.isNotEmpty) {
-      bestMove = possibleMoves[Random().nextInt(possibleMoves.length)];
-    }
-
-    return bestMove;
+    return null;
   }
 
   int? getAStarMove() {
@@ -439,6 +419,59 @@ class _PuzzleState extends State<Puzzle> {
     path = path.reversed.toList();
     pathLength = path.length - 1;
     return path;
+  }
+
+  List<List<int>> getGreedyPath(bool useManhattan) {
+    Set<String> visited = {};
+    PriorityQueue<Node> pq = PriorityQueue<Node>(
+      (a, b) => a.fScore.compareTo(b.fScore),
+    );
+
+    Node start = Node(
+      state: List.from(tiles),
+      parent: null,
+      cost: 0,
+      fScore: useManhattan
+          ? manhattanDistance(tiles).toDouble()
+          : eculideanDistance(tiles),
+    );
+
+    pq.add(start);
+    visited.add(start.state.toString());
+
+    while (pq.isNotEmpty) {
+      Node currentNode = pq.removeFirst();
+      nodesExpanded++;
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+        return constructedPath(temp);
+      }
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          int h = useManhattan
+              ? manhattanDistance(neighbor)
+              : eculideanDistance(neighbor).toInt();
+
+          pq.add(
+            Node(
+              fScore: h.toDouble(),
+              cost: 0,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+          visited.add(key);
+        }
+      }
+    }
+    return [];
   }
 
   List<List<int>> getAstarPath(bool useManhattan) {
@@ -544,18 +577,79 @@ class _PuzzleState extends State<Puzzle> {
     return [];
   }
 
+  int? getDFSMove() {
+    List<List<int>> path = getDFSPath();
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
+  }
+
+  List<List<int>> getDFSPath() {
+    List<Node> stack = [];
+
+    Set<String> visited = {};
+    Node start = Node(
+      fScore: 0,
+      cost: 0,
+      state: List.from(tiles),
+      parent: null,
+    );
+
+    stack.add(start);
+    visited.add(start.state.toString());
+
+    while (stack.isNotEmpty) {
+      Node currentNode = stack.removeLast();
+      nodesExpanded++;
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+
+        return constructedPath(temp);
+      }
+
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          int g = currentNode.cost + 1;
+          int f = g;
+
+          stack.add(
+            Node(
+              fScore: f.toDouble(),
+              cost: g,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+          visited.add(key);
+        }
+      }
+    }
+    return [];
+  }
+
   Future<void> autoSolve() async {
+    _isSolving = true;
     nodesExpanded = 0;
     pathLength = 0;
     executionTime = 0;
 
     visited.clear();
 
-    if (_selectedSolver == SolverType.bfs) {
+    if (!_isSolving || !mounted) return;
+
+    if (_selectedSolver == SolverType.BFS) {
       await solveWithBFSPath();
       return;
     }
-    if (_selectedSolver == SolverType.AStar) {
+    if (_selectedSolver == SolverType.Astar) {
       await solveWithAStarPath();
       return;
     }
@@ -635,12 +729,14 @@ class _PuzzleState extends State<Puzzle> {
 
   int? getHint() {
     switch (_selectedSolver) {
-      case SolverType.greedy:
-        return getGreedyMove(useManhattan);
-      case SolverType.bfs:
+      case SolverType.Greedy:
+        return getGreedyMove();
+      case SolverType.BFS:
         return getBFSMove();
-      case SolverType.AStar:
+      case SolverType.Astar:
         return getAStarMove();
+      case SolverType.DFS:
+        return getDFSMove();
     }
   }
 
@@ -653,10 +749,10 @@ class _PuzzleState extends State<Puzzle> {
         content: Text(
           "Solver: ${_selectedSolver.name}\n"
           "Moves: $moves\n"
-          "Time: ${formatTime(time)}"
+          "Time: ${formatTime(time)}\n\n"
           "Nodes Expanded: $nodesExpanded\n"
-          "Path Length: $pathLength"
-          "Execution Time: ${executionTime}",
+          "Path Length: $pathLength\n"
+          "Execution Time: ${executionTime}ms\n",
         ),
         actions: [
           TextButton(
