@@ -141,9 +141,18 @@ class _PuzzleState extends State<Puzzle> {
                                     Navigator.of(context).pop();
                                     setState(() {
                                       _isSolving = false;
-                                      shuffle();
-                                      _startCountUp();
                                     });
+
+                                    Future.delayed(
+                                      const Duration(milliseconds: 50),
+                                      () {
+                                        setState(() {
+                                          _isSolving = false;
+                                          shuffle();
+                                          _startCountUp();
+                                        });
+                                      },
+                                    );
                                   },
                                   child: const Text("Confirm"),
                                 ),
@@ -242,6 +251,7 @@ class _PuzzleState extends State<Puzzle> {
   }
   //====================================== Logic Section ======================================
 
+  // ==================================== Helper Functions ====================================
   void handleTap(int tileIndex) {
     int emptyIndex = tiles.indexOf(0);
 
@@ -260,6 +270,36 @@ class _PuzzleState extends State<Puzzle> {
         showWinDialog();
       }
     }
+  }
+
+  void showWinDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("You Win 🎉"),
+        content: Text(
+          "Solver: ${_selectedSolver.name}\n"
+          "Moves: $moves\n"
+          "Time: ${formatTime(time)}\n\n"
+          "Nodes Expanded: $nodesExpanded\n"
+          "Path Length: $pathLength\n"
+          "Execution Time: ${executionTime}ms\n",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                shuffle();
+                _startCountUp();
+              });
+            },
+            child: const Text("Restart"),
+          ),
+        ],
+      ),
+    );
   }
 
   bool validMove(int tileIndex, int emptyIndex) {
@@ -294,7 +334,7 @@ class _PuzzleState extends State<Puzzle> {
 
     tiles = List.from(goal);
 
-    for (int c = 0; c < 100; c++) {
+    for (int c = 0; c < 10; c++) {
       List<int> possibleMoves = [];
       int emptyIndex = tiles.indexOf(0);
 
@@ -329,6 +369,7 @@ class _PuzzleState extends State<Puzzle> {
     return "$m:$s";
   }
 
+  // Heuristics
   int manhattanDistance(List<int> state) {
     int distance = 0;
 
@@ -348,7 +389,6 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
-  // Testing
   double eculideanDistance(List<int> state) {
     double distance = 0;
 
@@ -370,6 +410,83 @@ class _PuzzleState extends State<Puzzle> {
     return distance;
   }
 
+  List<List<int>> constructedPath(Node? temp) {
+    List<List<int>> path = [];
+    while (temp != null) {
+      path.add(temp.state);
+      temp = temp.parent;
+    }
+    path = path.reversed.toList();
+    pathLength = path.length - 1;
+    return path;
+  }
+
+  Future<void> autoSolve() async {
+    // if (_isSolving == true) return;
+    nodesExpanded = 0;
+    pathLength = 0;
+    executionTime = 0;
+    _isSolving = true;
+    visited.clear();
+
+    if (_selectedSolver == SolverType.BFS) {
+      await solveWithBFSPath();
+      return;
+    }
+    if (_selectedSolver == SolverType.Astar) {
+      await solveWithAStarPath();
+      return;
+    }
+
+    if (_selectedSolver == SolverType.DFS) {
+      await solveWithDFSPath();
+      return;
+    }
+
+    while (!winState() && _isSolving) {
+      if (!_isSolving || !mounted) return;
+
+      visited.add(tiles.toString());
+
+      int? hint = getHint(); // This decide based on the _selectedSolver
+
+      if (hint == null) {
+        // fallback random
+        int emptyIndex = tiles.indexOf(0);
+        List<int> possibleMoves = [];
+
+        for (int i = 0; i < 9; i++) {
+          if (validMove(i, emptyIndex)) {
+            possibleMoves.add(i);
+          }
+        }
+
+        if (possibleMoves.isEmpty) break;
+
+        hint = possibleMoves[Random().nextInt(possibleMoves.length)];
+      }
+
+      handleTap(hint);
+
+      if (winState()) break;
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+  }
+
+  int? getHint() {
+    switch (_selectedSolver) {
+      case SolverType.Greedy:
+        return getGreedyMove();
+      case SolverType.BFS:
+        return getBFSMove();
+      case SolverType.Astar:
+        return getAStarMove();
+      case SolverType.DFS:
+        return getDFSMove();
+    }
+  }
+
   List<List<int>> getNeighbors(List<int> state) {
     List<List<int>> result = [];
 
@@ -386,39 +503,13 @@ class _PuzzleState extends State<Puzzle> {
     return result;
   }
 
+  // ============================= Greedy BFS Algorithm =============================
   int? getGreedyMove() {
     List<List<int>> path = getGreedyPath(useManhattan);
     if (path.length > 1) {
       return path[1].indexOf(0);
     }
     return null;
-  }
-
-  int? getAStarMove() {
-    List<List<int>> path = getAstarPath(useManhattan);
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  int? getBFSMove() {
-    List<List<int>> path = getBFSPath();
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> constructedPath(Node? temp) {
-    List<List<int>> path = [];
-    while (temp != null) {
-      path.add(temp.state);
-      temp = temp.parent;
-    }
-    path = path.reversed.toList();
-    pathLength = path.length - 1;
-    return path;
   }
 
   List<List<int>> getGreedyPath(bool useManhattan) {
@@ -472,6 +563,15 @@ class _PuzzleState extends State<Puzzle> {
       }
     }
     return [];
+  }
+
+  // ============================= Astar Algorithm =============================
+  int? getAStarMove() {
+    List<List<int>> path = getAstarPath(useManhattan);
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
   }
 
   List<List<int>> getAstarPath(bool useManhattan) {
@@ -528,6 +628,37 @@ class _PuzzleState extends State<Puzzle> {
     return [];
   }
 
+  Future<void> solveWithAStarPath() async {
+    final startTime = DateTime.now();
+    List<List<int>> path = getAstarPath(useManhattan);
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
+
+    for (int i = 1; i < path.length; i++) {
+      if (_isSolving == false || !mounted) return;
+
+      setState(() {
+        tiles = List.from(path[i]);
+        moves++;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+      _isSolving = false;
+    }
+  }
+
+  // ============================= BFS Algorithm =============================
+  int? getBFSMove() {
+    List<List<int>> path = getBFSPath();
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
+  }
+
   List<List<int>> getBFSPath() {
     Queue<Node> queue = Queue();
     Set<String> visited = {};
@@ -577,6 +708,29 @@ class _PuzzleState extends State<Puzzle> {
     return [];
   }
 
+  Future<void> solveWithBFSPath() async {
+    final startTime = DateTime.now();
+    List<List<int>> path = getBFSPath();
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
+
+    for (int i = 1; i < path.length; i++) {
+      if (_isSolving == false || !mounted) return;
+
+      setState(() {
+        tiles = List.from(path[i]);
+        moves++;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+      _isSolving = false;
+    }
+  }
+
+  // ============================= DFS Algorithm =============================
   int? getDFSMove() {
     List<List<int>> path = getDFSPath();
     if (path.length > 1) {
@@ -587,8 +741,9 @@ class _PuzzleState extends State<Puzzle> {
 
   List<List<int>> getDFSPath() {
     List<Node> stack = [];
-
     Set<String> visited = {};
+    int maxDepth = 31;
+
     Node start = Node(
       fScore: 0,
       cost: 0,
@@ -597,176 +752,61 @@ class _PuzzleState extends State<Puzzle> {
     );
 
     stack.add(start);
-    visited.add(start.state.toString());
 
     while (stack.isNotEmpty) {
       Node currentNode = stack.removeLast();
+
+      // if (currentNode.cost > maxDepth) continue;
       nodesExpanded++;
+
+      String key = currentNode.state.toString();
+
+      //  mark visited AFTER popping
+      if (visited.contains(key)) continue;
+      visited.add(key);
+
       List<int> current = currentNode.state;
 
       if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-
-        return constructedPath(temp);
+        return constructedPath(currentNode);
       }
 
-      List<List<int>> neighbors = getNeighbors(current);
+      List<List<int>> neighbors = getNeighbors(current).reversed.toList();
+
       for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int g = currentNode.cost + 1;
-          int f = g;
-
-          stack.add(
-            Node(
-              fScore: f.toDouble(),
-              cost: g,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  Future<void> autoSolve() async {
-    _isSolving = true;
-    nodesExpanded = 0;
-    pathLength = 0;
-    executionTime = 0;
-
-    visited.clear();
-
-    if (!_isSolving || !mounted) return;
-
-    if (_selectedSolver == SolverType.BFS) {
-      await solveWithBFSPath();
-      return;
-    }
-    if (_selectedSolver == SolverType.Astar) {
-      await solveWithAStarPath();
-      return;
-    }
-
-    while (!winState()) {
-      if (!mounted) return;
-
-      visited.add(tiles.toString());
-
-      int? hint = getHint(); // This decide based on the _selectedSolver
-
-      if (hint == null) {
-        // fallback random
-        int emptyIndex = tiles.indexOf(0);
-        List<int> possibleMoves = [];
-
-        for (int i = 0; i < 9; i++) {
-          if (validMove(i, emptyIndex)) {
-            possibleMoves.add(i);
-          }
-        }
-
-        if (possibleMoves.isEmpty) break;
-
-        hint = possibleMoves[Random().nextInt(possibleMoves.length)];
-      }
-
-      handleTap(hint);
-
-      if (winState()) break;
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-  }
-
-  Future<void> solveWithBFSPath() async {
-    final startTime = DateTime.now();
-    List<List<int>> path = getBFSPath();
-    executionTime = DateTime.now().difference(startTime).inMilliseconds;
-
-    for (int i = 1; i < path.length; i++) {
-      if (!mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-    }
-  }
-
-  Future<void> solveWithAStarPath() async {
-    final startTime = DateTime.now();
-    List<List<int>> path = getAstarPath(useManhattan);
-    executionTime = DateTime.now().difference(startTime).inMilliseconds;
-
-    for (int i = 1; i < path.length; i++) {
-      if (!mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-    }
-  }
-
-  int? getHint() {
-    switch (_selectedSolver) {
-      case SolverType.Greedy:
-        return getGreedyMove();
-      case SolverType.BFS:
-        return getBFSMove();
-      case SolverType.Astar:
-        return getAStarMove();
-      case SolverType.DFS:
-        return getDFSMove();
-    }
-  }
-
-  void showWinDialog() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("You Win 🎉"),
-        content: Text(
-          "Solver: ${_selectedSolver.name}\n"
-          "Moves: $moves\n"
-          "Time: ${formatTime(time)}\n\n"
-          "Nodes Expanded: $nodesExpanded\n"
-          "Path Length: $pathLength\n"
-          "Execution Time: ${executionTime}ms\n",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                shuffle();
-                _startCountUp();
-              });
-            },
-            child: const Text("Restart"),
+        stack.add(
+          Node(
+            fScore: 0,
+            cost: currentNode.cost + 1,
+            state: neighbor,
+            parent: currentNode,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    }
+
+    return []; // means failed
+  }
+
+  Future<void> solveWithDFSPath() async {
+    final startTime = DateTime.now();
+    List<List<int>> path = getDFSPath();
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
+
+    for (int i = 1; i < path.length; i++) {
+      if (_isSolving == false || !mounted) return;
+
+      setState(() {
+        tiles = List.from(path[i]);
+        moves++;
+      });
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+      _isSolving = false;
+    }
   }
 }
