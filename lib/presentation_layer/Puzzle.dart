@@ -275,6 +275,10 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   void shuffle() {
+    nodesExpanded = 0;
+    executionTime = 0;
+    pathLength = 0;
+
     visited.clear();
     _lastState = null;
     moves = 0;
