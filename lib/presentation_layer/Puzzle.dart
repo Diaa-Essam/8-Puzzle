@@ -79,22 +79,21 @@ class _PuzzleState extends State<Puzzle> {
                 ),
                 const SizedBox(height: 10),
 
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.brown[300],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Nodes Expanded:$nodesExpanded\nPath Length: $pathLength\nExecution Time: ${executionTime} ms",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-
+                // Container(
+                //   padding: const EdgeInsets.all(10),
+                //   decoration: BoxDecoration(
+                //     color: Colors.brown[300],
+                //     borderRadius: BorderRadius.circular(12),
+                //   ),
+                //   child: Text(
+                //     "Nodes Expanded:$nodesExpanded\nPath Length: $pathLength\nExecution Time: ${executionTime} ms",
+                //     style: const TextStyle(
+                //       fontSize: 16,
+                //       fontWeight: FontWeight.bold,
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                // ),
                 SizedBox(
                   width: 260,
                   height: 260,
@@ -652,7 +651,12 @@ class _PuzzleState extends State<Puzzle> {
       builder: (context) => AlertDialog(
         title: const Text("You Win 🎉"),
         content: Text(
-          "You solved it in $moves moves!\nTime: ${formatTime(time)}",
+          "Solver: ${_selectedSolver.name}\n"
+          "Moves: $moves\n"
+          "Time: ${formatTime(time)}"
+          "Nodes Expanded: $nodesExpanded\n"
+          "Path Length: $pathLength"
+          "Execution Time: ${executionTime}",
         ),
         actions: [
           TextButton(
