@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math';
 
-import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart'; // for listEquals
 import 'package:flutter/material.dart';
-import 'package:myapp/controller_layer/Node.dart';
-import 'package:myapp/prestation_layer/Tile.dart';
+import 'package:myapp/controller_layer/AgentsController.dart';
+import 'package:myapp/controller_layer/SolverType.dart';
+import 'package:myapp/presentation_layer/Tile.dart';
 
 class Puzzle extends StatefulWidget {
   const Puzzle({super.key});
@@ -15,31 +12,18 @@ class Puzzle extends StatefulWidget {
   State<Puzzle> createState() => _PuzzleState();
 }
 
-enum SolverType { greedy, bfs, AStar }
-
 class _PuzzleState extends State<Puzzle> {
-  List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-  final List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-  int moves = 0;
-  int time = 0;
-  Timer? timer;
-
-  Set<String> visited = {};
-  List<int>? _lastState;
-  bool useManhattan = true;
-
-  SolverType _selectedSolver = SolverType.greedy;
+  final Agentscontroller _controller = Agentscontroller();
 
   @override
   void initState() {
-    shuffle();
-    _startCountUp();
+    _controller.shuffle();
     super.initState();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _controller.timer?.cancel();
     super.dispose();
   }
 
@@ -66,7 +50,7 @@ class _PuzzleState extends State<Puzzle> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Moves: $moves\nTimer: ${formatTime(time)}",
+                    "Moves: ${_controller.moves}\nTimer: ${formatTime(_controller.time)}",
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -76,6 +60,21 @@ class _PuzzleState extends State<Puzzle> {
                 ),
                 const SizedBox(height: 10),
 
+                // Container(
+                //   padding: const EdgeInsets.all(10),
+                //   decoration: BoxDecoration(
+                //     color: Colors.brown[300],
+                //     borderRadius: BorderRadius.circular(12),
+                //   ),
+                //   child: Text(
+                //     "Nodes Expanded:${_controller.nodesExpanded}\nPath Length: ${_controller.pathLength}\nExecution Time: ${_controller.executionTime} ms",
+                //     style: const TextStyle(
+                //       fontSize: 16,
+                //       fontWeight: FontWeight.bold,
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                // ),
                 SizedBox(
                   width: 260,
                   height: 260,
@@ -87,11 +86,22 @@ class _PuzzleState extends State<Puzzle> {
                           crossAxisCount: 3,
                         ),
                     itemBuilder: (context, index) {
-                      int emptyIndex = tiles.indexOf(0);
-                      bool isMovable = validMove(index, emptyIndex);
+                      int emptyIndex = _controller.tiles.indexOf(0);
+                      bool isMovable = _controller.validMove(index, emptyIndex);
                       return TileWidget(
-                        value: tiles[index],
-                        onTap: isMovable ? () => handleTap(index) : null,
+                        value: _controller.tiles[index],
+                        onTap: isMovable
+                            ? () {
+                                if (_controller.moves == 0) {
+                                  _startCountUp();
+                                }
+                                _controller.handleTap(
+                                  index,
+                                  () => setState(() {}),
+                                  showWinDialog,
+                                );
+                              }
+                            : null,
                         isMovable: isMovable,
                       );
                     },
@@ -103,6 +113,10 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () {
                           showDialog(
                             barrierDismissible: false,
@@ -122,9 +136,19 @@ class _PuzzleState extends State<Puzzle> {
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                     setState(() {
-                                      shuffle();
-                                      _startCountUp();
+                                      _controller.isSolving = false;
                                     });
+
+                                    Future.delayed(
+                                      const Duration(milliseconds: 50),
+                                      () {
+                                        setState(() {
+                                          _controller.isSolving = false;
+                                          _controller.shuffle();
+                                          _startCountUp();
+                                        });
+                                      },
+                                    );
                                   },
                                   child: const Text("Confirm"),
                                 ),
@@ -135,23 +159,45 @@ class _PuzzleState extends State<Puzzle> {
                         child: const Text("Restart"),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () {
-                          int? hint = getHint();
-                          if (hint != null) handleTap(hint);
+                          int? hint = _controller.getHint();
+                          if (hint != null) {
+                            if (_controller.moves == 0) _startCountUp();
+                            _controller.handleTap(
+                              hint,
+                              () => setState(() {}),
+                              showWinDialog,
+                            );
+                          }
                         },
                         child: const Text("Hint"),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.brown,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () async {
-                          await autoSolve();
+                          await _controller.autoSolve(
+                            () => setState(() {}),
+                            showWinDialog,
+                          );
                         },
-                        child: const Text("Auto Solver"),
+                        child: const Text(
+                          "Auto Solver",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -162,24 +208,29 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     const Text("Solver: "),
                     DropdownButton<SolverType>(
-                      value: _selectedSolver,
+                      value: _controller.selectedSolver,
                       items: const [
-                        DropdownMenuItem(
-                          value: SolverType.greedy,
-                          child: Text("Greedy"),
-                        ),
                         DropdownMenuItem(
                           value: SolverType.bfs,
                           child: Text("BFS"),
                         ),
                         DropdownMenuItem(
-                          value: SolverType.AStar,
+                          value: SolverType.dfs,
+                          child: Text("DFS"),
+                        ),
+                        DropdownMenuItem(
+                          value: SolverType.greedy,
+                          child: Text("Greedy"),
+                        ),
+
+                        DropdownMenuItem(
+                          value: SolverType.aStar,
                           child: Text("A*"),
                         ),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _selectedSolver = value!;
+                          _controller.selectedSolver = value!;
                         });
                       },
                     ),
@@ -190,7 +241,7 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     const Text("Heuristic: "),
                     DropdownButton<bool>(
-                      value: useManhattan,
+                      value: _controller.useManhattan,
                       items: const [
                         DropdownMenuItem(
                           value: true,
@@ -203,7 +254,7 @@ class _PuzzleState extends State<Puzzle> {
                       ],
                       onChanged: (value) {
                         setState(() {
-                          useManhattan = value!;
+                          _controller.useManhattan = value!;
                         });
                       },
                     ),
@@ -216,74 +267,13 @@ class _PuzzleState extends State<Puzzle> {
       ),
     );
   }
-  //====================================== Logic Section ======================================
-
-  void handleTap(int tileIndex) {
-    int emptyIndex = tiles.indexOf(0);
-
-    if (validMove(tileIndex, emptyIndex)) {
-      setState(() {
-        _lastState = List.from(tiles);
-        swap(tiles, tileIndex, emptyIndex);
-        moves++;
-      });
-
-      if (winState()) {
-        timer?.cancel();
-        showWinDialog();
-      }
-    }
-  }
-
-  bool validMove(int tileIndex, int emptyIndex) {
-    return (emptyIndex == tileIndex + 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
-        (emptyIndex == tileIndex - 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
-        emptyIndex == tileIndex + 3 ||
-        emptyIndex == tileIndex - 3;
-  }
-
-  void swap(List<int> tiles, int tileIndex, int emptyIndex) {
-    int temp = tiles[tileIndex];
-    tiles[tileIndex] = tiles[emptyIndex];
-    tiles[emptyIndex] = temp;
-  }
-
-  bool winState() {
-    for (int i = 0; i < tiles.length - 1; i++) {
-      if (tiles[i] != i + 1) return false;
-    }
-    return true;
-  }
-
-  void shuffle() {
-    visited.clear();
-    _lastState = null;
-    moves = 0;
-    time = 0;
-
-    tiles = List.from(goal);
-
-    for (int c = 0; c < 100; c++) {
-      List<int> possibleMoves = [];
-      int emptyIndex = tiles.indexOf(0);
-
-      for (int i = 0; i < 9; i++) {
-        if (validMove(i, emptyIndex)) {
-          possibleMoves.add(i);
-        }
-      }
-
-      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
-      swap(tiles, pickedTile, emptyIndex);
-    }
-  }
 
   void _startCountUp() {
-    timer?.cancel();
+    _controller.timer?.cancel();
 
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _controller.timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        time++;
+        _controller.time++;
       });
     });
   }
@@ -298,321 +288,6 @@ class _PuzzleState extends State<Puzzle> {
     return "$m:$s";
   }
 
-  int manhattanDistance(List<int> state) {
-    int distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += (currentRow - goalRow).abs() + (currentCol - goalCol).abs();
-    }
-
-    return distance;
-  }
-
-  // Testing
-  double eculideanDistance(List<int> state) {
-    double distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += sqrt(
-        pow(currentRow - goalRow, 2) + pow(currentCol - goalCol, 2),
-      );
-    }
-
-    return distance;
-  }
-
-  List<List<int>> getNeighbors(List<int> state) {
-    List<List<int>> result = [];
-
-    int emptyIndex = state.indexOf(0);
-
-    for (int i = 0; i < state.length; i++) {
-      if (validMove(i, emptyIndex)) {
-        List<int> newState = List.from(state);
-        swap(newState, i, emptyIndex);
-        result.add(newState);
-      }
-    }
-
-    return result;
-  }
-
-  int? getGreedyMove() {
-    int emptyIndex = tiles.indexOf(0);
-    List<int> possibleMoves = [];
-
-    for (int i = 0; i < 9; i++) {
-      if (validMove(i, emptyIndex)) {
-        possibleMoves.add(i);
-      }
-    }
-
-    int? bestMove;
-    int bestScore = 1 << 30;
-
-    for (int move in possibleMoves) {
-      List<int> temp = List.from(tiles);
-      swap(temp, move, emptyIndex);
-
-      if (_lastState != null && listEquals(temp, _lastState!)) continue;
-      if (visited.contains(temp.toString())) continue;
-
-      int score = useManhattan
-          ? manhattanDistance(temp)
-          : eculideanDistance(temp).toInt();
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-
-    if (bestMove == null && possibleMoves.isNotEmpty) {
-      bestMove = possibleMoves[Random().nextInt(possibleMoves.length)];
-    }
-
-    return bestMove;
-  }
-
-  int? getAStarMove() {
-    List<List<int>> path = getAstarPath();
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  int? getBFSMove() {
-    List<List<int>> path = getBFSPath();
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> constructedPath(Node? temp) {
-    List<List<int>> path = [];
-    while (temp != null) {
-      path.add(temp.state);
-      temp = temp.parent;
-    }
-    path = path.reversed.toList();
-    return path;
-  }
-
-  List<List<int>> getAstarPath() {
-    List<List<int>> path = [];
-    Set<String> visited = {};
-    PriorityQueue<Node> pq = PriorityQueue<Node>(
-      (a, b) => a.fScore.compareTo(b.fScore),
-    );
-
-    Node start = Node(
-      state: List.from(tiles),
-      parent: null,
-      cost: 0,
-      fScore: useManhattan
-          ? manhattanDistance(tiles).toDouble()
-          : eculideanDistance(tiles),
-    );
-
-    pq.add(start);
-    visited.add(start.state.toString());
-
-    while (pq.isNotEmpty) {
-      Node currentNode = pq.removeFirst();
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-        return constructedPath(temp);
-      }
-      List<List<int>> neighbors = getNeighbors(current);
-      for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int g = currentNode.cost + 1;
-          int h = useManhattan
-              ? manhattanDistance(neighbor)
-              : eculideanDistance(neighbor).toInt();
-
-          pq.add(
-            Node(
-              fScore: (g + h).toDouble(),
-              cost: g,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  List<List<int>> getBFSPath() {
-    List<List<int>> path = [];
-    Queue<Node> queue = Queue();
-    Set<String> visited = {};
-    Node start = Node(
-      fScore: 0,
-      cost: 0,
-      state: List.from(tiles),
-      parent: null,
-    );
-
-    queue.add(start);
-    visited.add(start.state.toString());
-
-    while (queue.isNotEmpty) {
-      Node currentNode = queue.removeFirst();
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-
-        return constructedPath(temp);
-      }
-
-      List<List<int>> neighbors = getNeighbors(current);
-      for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int g = currentNode.cost + 1;
-          int f = g;
-
-          queue.add(
-            Node(
-              fScore: f.toDouble(),
-              cost: g,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  Future<void> autoSolve() async {
-    visited.clear();
-
-    if (_selectedSolver == SolverType.bfs) {
-      await solveWithBFSPath();
-      return;
-    }
-    if (_selectedSolver == SolverType.AStar) {
-      await solveWithAStarPath();
-      return;
-    }
-
-    while (!winState()) {
-      if (!mounted) return;
-
-      visited.add(tiles.toString());
-
-      int? hint = getHint(); // This decide based on the _selectedSolver
-
-      if (hint == null) {
-        // fallback random
-        int emptyIndex = tiles.indexOf(0);
-        List<int> possibleMoves = [];
-
-        for (int i = 0; i < 9; i++) {
-          if (validMove(i, emptyIndex)) {
-            possibleMoves.add(i);
-          }
-        }
-
-        if (possibleMoves.isEmpty) break;
-
-        hint = possibleMoves[Random().nextInt(possibleMoves.length)];
-      }
-
-      handleTap(hint);
-
-      if (winState()) break;
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-  }
-
-  Future<void> solveWithBFSPath() async {
-    List<List<int>> path = getBFSPath();
-
-    for (int i = 1; i < path.length; i++) {
-      if (!mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-    }
-  }
-
-  Future<void> solveWithAStarPath() async {
-    List<List<int>> path = getAstarPath();
-
-    for (int i = 1; i < path.length; i++) {
-      if (!mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-    }
-  }
-
-  int? getHint() {
-    switch (_selectedSolver) {
-      case SolverType.greedy:
-        return getGreedyMove();
-      case SolverType.bfs:
-        return getBFSMove();
-      case SolverType.AStar:
-        return getAStarMove();
-    }
-  }
-
   void showWinDialog() {
     showDialog(
       barrierDismissible: false,
@@ -620,14 +295,19 @@ class _PuzzleState extends State<Puzzle> {
       builder: (context) => AlertDialog(
         title: const Text("You Win 🎉"),
         content: Text(
-          "You solved it in $moves moves!\nTime: ${formatTime(time)}",
+          "Solver: ${_controller.selectedSolver.name}\n"
+          "Moves: ${_controller.moves}\n"
+          "Time: ${formatTime(_controller.time)}\n\n"
+          "Nodes Expanded: ${_controller.nodesExpanded}\n"
+          "Path Length: ${_controller.pathLength}\n"
+          "Execution Time: ${_controller.executionTime}ms\n",
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               setState(() {
-                shuffle();
+                _controller.shuffle();
                 _startCountUp();
               });
             },
