@@ -13,10 +13,15 @@ class Agentscontroller {
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int>? _lastState;
   Set<String> visited = {};
-  SolverType selectedSolver = SolverType.greedy;
+  SolverType selectedSolver = SolverType.bfs;
+  bool useManhattan = true;
+  bool isSolving = false;
   Timer? timer;
   int moves = 0;
   int time = 0;
+  int nodesExpanded = 0;
+  int pathLength = 0;
+  int executionTime = 0;
 
   //bfs
   int? getBFSMove() {
@@ -28,7 +33,6 @@ class Agentscontroller {
   }
 
   List<List<int>> getBFSPath() {
-    List<List<int>> path = [];
     Queue<Node> queue = Queue();
     Set<String> visited = {};
     Node start = Node(
@@ -43,6 +47,7 @@ class Agentscontroller {
 
     while (queue.isNotEmpty) {
       Node currentNode = queue.removeFirst();
+      nodesExpanded++;
       List<int> current = currentNode.state;
 
       if (listEquals(current, goal)) {
@@ -50,12 +55,7 @@ class Agentscontroller {
 
         Node? temp = goalNode;
 
-        while (temp != null) {
-          path.add(temp.state);
-          temp = temp.parent;
-        }
-        path = path.reversed.toList();
-        return path;
+        return constructedPath(temp);
       }
 
       List<List<int>> neighbors = getNeighbors(current);
@@ -63,15 +63,18 @@ class Agentscontroller {
         String key = neighbor.toString();
 
         if (!visited.contains(key)) {
-          visited.add(key);
+          int g = currentNode.cost + 1;
+          int f = g;
+
           queue.add(
             Node(
-              fScore: currentNode.cost + 1,
-              cost: currentNode.cost + 1,
+              fScore: f.toDouble(),
+              cost: g,
               state: neighbor,
               parent: currentNode,
             ),
           );
+          visited.add(key);
         }
       }
     }
@@ -82,9 +85,15 @@ class Agentscontroller {
     VoidCallback setState,
     VoidCallback showWinDialog,
   ) async {
+    final startTime = DateTime.now();
     List<List<int>> path = getBFSPath();
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
 
     for (int i = 1; i < path.length; i++) {
+      if (isSolving == false) return;
+
+      tiles = List.from(path[i]);
+      moves++;
       setState();
 
       await Future.delayed(const Duration(milliseconds: 300));
@@ -92,87 +101,21 @@ class Agentscontroller {
     if (winState()) {
       timer?.cancel();
       showWinDialog();
+      isSolving = false;
     }
   }
 
   //greedy
 
-  int? getGreedyMove(bool useManhattan) {
-    int emptyIndex = tiles.indexOf(0);
-    List<int> possibleMoves = [];
-
-    for (int i = 0; i < 9; i++) {
-      if (validMove(i, emptyIndex)) {
-        possibleMoves.add(i);
-      }
+  int? getGreedyMove() {
+    List<List<int>> path = getGreedyPath(useManhattan);
+    if (path.length > 1) {
+      return path[1].indexOf(0);
     }
-
-    int? bestMove;
-    int bestScore = 1 << 30;
-
-    for (int move in possibleMoves) {
-      List<int> temp = List.from(tiles);
-      swap(temp, move, emptyIndex);
-
-      if (_lastState != null && listEquals(temp, _lastState!)) continue;
-      if (visited.contains(temp.toString())) continue;
-
-      int score = useManhattan
-          ? manhattanDistance(temp)
-          : eculideanDistance(temp).toInt();
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMove = move;
-      }
-    }
-
-    if (bestMove == null && possibleMoves.isNotEmpty) {
-      bestMove = possibleMoves[Random().nextInt(possibleMoves.length)];
-    }
-
-    return bestMove;
+    return null;
   }
 
-  //A*
-
-  int? getAStarMove(bool useManhattan) {
-    int emptyIndex = tiles.indexOf(0);
-    List<int> possibleMoves = [];
-
-    for (int i = 0; i < 9; i++) {
-      if (validMove(i, emptyIndex)) {
-        possibleMoves.add(i);
-      }
-    }
-
-    int? bestMove;
-    int bestScore = 1 << 30;
-
-    for (int move in possibleMoves) {
-      List<int> temp = List.from(tiles);
-      swap(temp, move, emptyIndex);
-
-      if (_lastState != null && listEquals(temp, _lastState!)) continue;
-      if (visited.contains(temp.toString())) continue;
-
-      int h = useManhattan
-          ? manhattanDistance(temp)
-          : eculideanDistance(temp).toInt();
-      int g = 1;
-
-      int f = g + h;
-
-      if (f < bestScore) {
-        bestScore = f;
-        bestMove = move;
-      }
-    }
-    return bestMove; // clean placeholder
-  }
-
-  List<List<int>> getAstarPath(bool useManhattan) {
-    List<List<int>> path = [];
+  List<List<int>> getGreedyPath(bool useManhattan) {
     Set<String> visited = {};
     PriorityQueue<Node> pq = PriorityQueue<Node>(
       (a, b) => a.fScore.compareTo(b.fScore),
@@ -188,10 +131,211 @@ class Agentscontroller {
     );
 
     pq.add(start);
-    visited.add(start.toString());
+    visited.add(start.state.toString());
 
-    while (pq.isNotEmpty) {}
-    return path;
+    while (pq.isNotEmpty) {
+      Node currentNode = pq.removeFirst();
+      nodesExpanded++;
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+        return constructedPath(temp);
+      }
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          int h = useManhattan
+              ? manhattanDistance(neighbor)
+              : eculideanDistance(neighbor).toInt();
+
+          pq.add(
+            Node(
+              fScore: h.toDouble(),
+              cost: 0,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+          visited.add(key);
+        }
+      }
+    }
+    return [];
+  }
+
+  //A*
+
+  int? getAStarMove() {
+    List<List<int>> path = getAstarPath(useManhattan);
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
+  }
+
+  List<List<int>> getAstarPath(bool useManhattan) {
+    Set<String> visited = {};
+    PriorityQueue<Node> pq = PriorityQueue<Node>(
+      (a, b) => a.fScore.compareTo(b.fScore),
+    );
+
+    Node start = Node(
+      state: List.from(tiles),
+      parent: null,
+      cost: 0,
+      fScore: useManhattan
+          ? manhattanDistance(tiles).toDouble()
+          : eculideanDistance(tiles),
+    );
+
+    pq.add(start);
+    visited.add(start.state.toString());
+
+    while (pq.isNotEmpty) {
+      Node currentNode = pq.removeFirst();
+      nodesExpanded++;
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        Node goalNode = currentNode;
+
+        Node? temp = goalNode;
+        return constructedPath(temp);
+      }
+      List<List<int>> neighbors = getNeighbors(current);
+      for (var neighbor in neighbors) {
+        String key = neighbor.toString();
+
+        if (!visited.contains(key)) {
+          int g = currentNode.cost + 1;
+          int h = useManhattan
+              ? manhattanDistance(neighbor)
+              : eculideanDistance(neighbor).toInt();
+
+          pq.add(
+            Node(
+              fScore: (g + h).toDouble(),
+              cost: g,
+              state: neighbor,
+              parent: currentNode,
+            ),
+          );
+          visited.add(key);
+        }
+      }
+    }
+    return [];
+  }
+
+  Future<void> solveWithAStarPath(
+    VoidCallback setState,
+    VoidCallback showWinDialog,
+  ) async {
+    final startTime = DateTime.now();
+    List<List<int>> path = getAstarPath(useManhattan);
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
+
+    for (int i = 1; i < path.length; i++) {
+      if (isSolving == false) return;
+
+      tiles = List.from(path[i]);
+      moves++;
+      setState();
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+      isSolving = false;
+    }
+  }
+
+  // ============================= DFS Algorithm =============================
+  int? getDFSMove() {
+    List<List<int>> path = getDFSPath();
+    if (path.length > 1) {
+      return path[1].indexOf(0);
+    }
+    return null;
+  }
+
+  List<List<int>> getDFSPath() {
+    List<Node> stack = [];
+    Set<String> visited = {};
+    int maxDepth = 31;
+
+    Node start = Node(
+      fScore: 0,
+      cost: 0,
+      state: List.from(tiles),
+      parent: null,
+    );
+
+    stack.add(start);
+
+    while (stack.isNotEmpty) {
+      Node currentNode = stack.removeLast();
+
+      // if (currentNode.cost > maxDepth) continue;
+      nodesExpanded++;
+
+      String key = currentNode.state.toString();
+
+      //  mark visited AFTER popping
+      if (visited.contains(key)) continue;
+      visited.add(key);
+
+      List<int> current = currentNode.state;
+
+      if (listEquals(current, goal)) {
+        return constructedPath(currentNode);
+      }
+
+      List<List<int>> neighbors = getNeighbors(current).reversed.toList();
+
+      for (var neighbor in neighbors) {
+        stack.add(
+          Node(
+            fScore: 0,
+            cost: currentNode.cost + 1,
+            state: neighbor,
+            parent: currentNode,
+          ),
+        );
+      }
+    }
+
+    return []; // means failed
+  }
+
+  Future<void> solveWithDFSPath(
+    VoidCallback setState,
+    VoidCallback showWinDialog,
+  ) async {
+    final startTime = DateTime.now();
+    List<List<int>> path = getDFSPath();
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
+
+    for (int i = 1; i < path.length; i++) {
+      if (isSolving == false) return;
+
+      tiles = List.from(path[i]);
+      moves++;
+      setState();
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    if (winState()) {
+      timer?.cancel();
+      showWinDialog();
+      isSolving = false;
+    }
   }
 
   //hint mechanism
@@ -199,11 +343,13 @@ class Agentscontroller {
   int? getHint() {
     switch (selectedSolver) {
       case SolverType.greedy:
-        return getGreedyMove(false);
+        return getGreedyMove();
       case SolverType.bfs:
         return getBFSMove();
       case SolverType.aStar:
-        return getAStarMove(false);
+        return getAStarMove();
+      case SolverType.dfs:
+        return getDFSMove();
     }
   }
 
@@ -213,14 +359,28 @@ class Agentscontroller {
     VoidCallback setState,
     VoidCallback showWinDialog,
   ) async {
+    // if (isSolving == true) return;
+    nodesExpanded = 0;
+    pathLength = 0;
+    executionTime = 0;
+    isSolving = true;
     visited.clear();
 
     if (selectedSolver == SolverType.bfs) {
       await solveWithBFSPath(setState, showWinDialog);
       return;
     }
+    if (selectedSolver == SolverType.aStar) {
+      await solveWithAStarPath(setState, showWinDialog);
+      return;
+    }
 
-    while (!winState()) {
+    if (selectedSolver == SolverType.dfs) {
+      await solveWithDFSPath(setState, showWinDialog);
+      return;
+    }
+
+    while (!winState() && isSolving) {
       //if (!mounted) return;
 
       visited.add(tiles.toString());
@@ -252,6 +412,17 @@ class Agentscontroller {
   }
 
   //helper functions
+
+  List<List<int>> constructedPath(Node? temp) {
+    List<List<int>> path = [];
+    while (temp != null) {
+      path.add(temp.state);
+      temp = temp.parent;
+    }
+    path = path.reversed.toList();
+    pathLength = path.length - 1;
+    return path;
+  }
 
   List<List<int>> getNeighbors(List<int> state) {
     List<List<int>> result = [];
@@ -351,6 +522,10 @@ class Agentscontroller {
   }
 
   void shuffle() {
+    nodesExpanded = 0;
+    executionTime = 0;
+    pathLength = 0;
+
     visited.clear();
     _lastState = null;
     moves = 0;
@@ -358,7 +533,7 @@ class Agentscontroller {
 
     tiles = List.from(goal);
 
-    for (int c = 0; c < 100; c++) {
+    for (int c = 0; c < 10; c++) {
       List<int> possibleMoves = [];
       int emptyIndex = tiles.indexOf(0);
 

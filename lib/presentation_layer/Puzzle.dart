@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math';
 
-import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart'; // for listEquals
 import 'package:flutter/material.dart';
-import 'package:myapp/controller_layer/Node.dart';
+import 'package:myapp/controller_layer/AgentsController.dart';
+import 'package:myapp/controller_layer/SolverType.dart';
 import 'package:myapp/presentation_layer/TileWidget.dart';
 
 class Puzzle extends StatefulWidget {
@@ -15,34 +12,18 @@ class Puzzle extends StatefulWidget {
   State<Puzzle> createState() => _PuzzleState();
 }
 
-enum SolverType { Greedy, BFS, Astar, DFS }
-
 class _PuzzleState extends State<Puzzle> {
-  List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-  final List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-  bool _isSolving = false;
-  int moves = 0;
-  int time = 0;
-  Timer? timer;
-  int nodesExpanded = 0;
-  int pathLength = 0;
-  int executionTime = 0;
-
-  Set<String> visited = {};
-  List<int>? _lastState;
-  bool useManhattan = true;
-
-  SolverType _selectedSolver = SolverType.BFS;
+  final Agentscontroller _controller = Agentscontroller();
 
   @override
   void initState() {
-    shuffle();
+    _controller.shuffle();
     super.initState();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _controller.timer?.cancel();
     super.dispose();
   }
 
@@ -69,7 +50,7 @@ class _PuzzleState extends State<Puzzle> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Moves: $moves\nTimer: ${formatTime(time)}",
+                    "Moves: ${_controller.moves}\nTimer: ${formatTime(_controller.time)}",
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -86,7 +67,7 @@ class _PuzzleState extends State<Puzzle> {
                 //     borderRadius: BorderRadius.circular(12),
                 //   ),
                 //   child: Text(
-                //     "Nodes Expanded:$nodesExpanded\nPath Length: $pathLength\nExecution Time: ${executionTime} ms",
+                //     "Nodes Expanded:${_controller.nodesExpanded}\nPath Length: ${_controller.pathLength}\nExecution Time: ${_controller.executionTime} ms",
                 //     style: const TextStyle(
                 //       fontSize: 16,
                 //       fontWeight: FontWeight.bold,
@@ -105,11 +86,22 @@ class _PuzzleState extends State<Puzzle> {
                           crossAxisCount: 3,
                         ),
                     itemBuilder: (context, index) {
-                      int emptyIndex = tiles.indexOf(0);
-                      bool isMovable = validMove(index, emptyIndex);
+                      int emptyIndex = _controller.tiles.indexOf(0);
+                      bool isMovable = _controller.validMove(index, emptyIndex);
                       return TileWidget(
-                        value: tiles[index],
-                        onTap: isMovable ? () => handleTap(index) : null,
+                        value: _controller.tiles[index],
+                        onTap: isMovable
+                            ? () {
+                                if (_controller.moves == 0) {
+                                  _startCountUp();
+                                }
+                                _controller.handleTap(
+                                  index,
+                                  () => setState(() {}),
+                                  showWinDialog,
+                                );
+                              }
+                            : null,
                         isMovable: isMovable,
                       );
                     },
@@ -121,6 +113,10 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () {
                           showDialog(
                             barrierDismissible: false,
@@ -140,15 +136,15 @@ class _PuzzleState extends State<Puzzle> {
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                     setState(() {
-                                      _isSolving = false;
+                                      _controller.isSolving = false;
                                     });
 
                                     Future.delayed(
                                       const Duration(milliseconds: 50),
                                       () {
                                         setState(() {
-                                          _isSolving = false;
-                                          shuffle();
+                                          _controller.isSolving = false;
+                                          _controller.shuffle();
                                           _startCountUp();
                                         });
                                       },
@@ -163,23 +159,45 @@ class _PuzzleState extends State<Puzzle> {
                         child: const Text("Restart"),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () {
-                          int? hint = getHint();
-                          if (hint != null) handleTap(hint);
+                          int? hint = _controller.getHint();
+                          if (hint != null) {
+                            if (_controller.moves == 0) _startCountUp();
+                            _controller.handleTap(
+                              hint,
+                              () => setState(() {}),
+                              showWinDialog,
+                            );
+                          }
                         },
                         child: const Text("Hint"),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.brown,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: () async {
-                          await autoSolve();
+                          await _controller.autoSolve(
+                            () => setState(() {}),
+                            showWinDialog,
+                          );
                         },
-                        child: const Text("Auto Solver"),
+                        child: const Text(
+                          "Auto Solver",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -190,29 +208,29 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     const Text("Solver: "),
                     DropdownButton<SolverType>(
-                      value: _selectedSolver,
+                      value: _controller.selectedSolver,
                       items: const [
                         DropdownMenuItem(
-                          value: SolverType.BFS,
+                          value: SolverType.bfs,
                           child: Text("BFS"),
                         ),
                         DropdownMenuItem(
-                          value: SolverType.DFS,
+                          value: SolverType.dfs,
                           child: Text("DFS"),
                         ),
                         DropdownMenuItem(
-                          value: SolverType.Greedy,
+                          value: SolverType.greedy,
                           child: Text("Greedy"),
                         ),
 
                         DropdownMenuItem(
-                          value: SolverType.Astar,
+                          value: SolverType.aStar,
                           child: Text("A*"),
                         ),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _selectedSolver = value!;
+                          _controller.selectedSolver = value!;
                         });
                       },
                     ),
@@ -223,7 +241,7 @@ class _PuzzleState extends State<Puzzle> {
                   children: [
                     const Text("Heuristic: "),
                     DropdownButton<bool>(
-                      value: useManhattan,
+                      value: _controller.useManhattan,
                       items: const [
                         DropdownMenuItem(
                           value: true,
@@ -236,7 +254,7 @@ class _PuzzleState extends State<Puzzle> {
                       ],
                       onChanged: (value) {
                         setState(() {
-                          useManhattan = value!;
+                          _controller.useManhattan = value!;
                         });
                       },
                     ),
@@ -249,112 +267,13 @@ class _PuzzleState extends State<Puzzle> {
       ),
     );
   }
-  //====================================== Logic Section ======================================
-
-  // ==================================== Helper Functions ====================================
-  void handleTap(int tileIndex) {
-    int emptyIndex = tiles.indexOf(0);
-
-    if (moves == 0) {
-      _startCountUp();
-    }
-    if (validMove(tileIndex, emptyIndex)) {
-      setState(() {
-        _lastState = List.from(tiles);
-        swap(tiles, tileIndex, emptyIndex);
-        moves++;
-      });
-
-      if (winState()) {
-        timer?.cancel();
-        showWinDialog();
-      }
-    }
-  }
-
-  void showWinDialog() {
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("You Win 🎉"),
-        content: Text(
-          "Solver: ${_selectedSolver.name}\n"
-          "Moves: $moves\n"
-          "Time: ${formatTime(time)}\n\n"
-          "Nodes Expanded: $nodesExpanded\n"
-          "Path Length: $pathLength\n"
-          "Execution Time: ${executionTime}ms\n",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                shuffle();
-                _startCountUp();
-              });
-            },
-            child: const Text("Restart"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool validMove(int tileIndex, int emptyIndex) {
-    return (emptyIndex == tileIndex + 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
-        (emptyIndex == tileIndex - 1 && emptyIndex ~/ 3 == tileIndex ~/ 3) ||
-        emptyIndex == tileIndex + 3 ||
-        emptyIndex == tileIndex - 3;
-  }
-
-  void swap(List<int> tiles, int tileIndex, int emptyIndex) {
-    int temp = tiles[tileIndex];
-    tiles[tileIndex] = tiles[emptyIndex];
-    tiles[emptyIndex] = temp;
-  }
-
-  bool winState() {
-    for (int i = 0; i < tiles.length - 1; i++) {
-      if (tiles[i] != i + 1) return false;
-    }
-    return true;
-  }
-
-  void shuffle() {
-    nodesExpanded = 0;
-    executionTime = 0;
-    pathLength = 0;
-
-    visited.clear();
-    _lastState = null;
-    moves = 0;
-    time = 0;
-
-    tiles = List.from(goal);
-
-    for (int c = 0; c < 10; c++) {
-      List<int> possibleMoves = [];
-      int emptyIndex = tiles.indexOf(0);
-
-      for (int i = 0; i < 9; i++) {
-        if (validMove(i, emptyIndex)) {
-          possibleMoves.add(i);
-        }
-      }
-
-      int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
-      swap(tiles, pickedTile, emptyIndex);
-    }
-  }
 
   void _startCountUp() {
-    timer?.cancel();
+    _controller.timer?.cancel();
 
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _controller.timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        time++;
+        _controller.time++;
       });
     });
   }
@@ -369,444 +288,33 @@ class _PuzzleState extends State<Puzzle> {
     return "$m:$s";
   }
 
-  // Heuristics
-  int manhattanDistance(List<int> state) {
-    int distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += (currentRow - goalRow).abs() + (currentCol - goalCol).abs();
-    }
-
-    return distance;
-  }
-
-  double eculideanDistance(List<int> state) {
-    double distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += sqrt(
-        pow(currentRow - goalRow, 2) + pow(currentCol - goalCol, 2),
-      );
-    }
-
-    return distance;
-  }
-
-  List<List<int>> constructedPath(Node? temp) {
-    List<List<int>> path = [];
-    while (temp != null) {
-      path.add(temp.state);
-      temp = temp.parent;
-    }
-    path = path.reversed.toList();
-    pathLength = path.length - 1;
-    return path;
-  }
-
-  Future<void> autoSolve() async {
-    // if (_isSolving == true) return;
-    nodesExpanded = 0;
-    pathLength = 0;
-    executionTime = 0;
-    _isSolving = true;
-    visited.clear();
-
-    if (_selectedSolver == SolverType.BFS) {
-      await solveWithBFSPath();
-      return;
-    }
-    if (_selectedSolver == SolverType.Astar) {
-      await solveWithAStarPath();
-      return;
-    }
-
-    if (_selectedSolver == SolverType.DFS) {
-      await solveWithDFSPath();
-      return;
-    }
-
-    while (!winState() && _isSolving) {
-      if (!_isSolving || !mounted) return;
-
-      visited.add(tiles.toString());
-
-      int? hint = getHint(); // This decide based on the _selectedSolver
-
-      if (hint == null) {
-        // fallback random
-        int emptyIndex = tiles.indexOf(0);
-        List<int> possibleMoves = [];
-
-        for (int i = 0; i < 9; i++) {
-          if (validMove(i, emptyIndex)) {
-            possibleMoves.add(i);
-          }
-        }
-
-        if (possibleMoves.isEmpty) break;
-
-        hint = possibleMoves[Random().nextInt(possibleMoves.length)];
-      }
-
-      handleTap(hint);
-
-      if (winState()) break;
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-  }
-
-  int? getHint() {
-    switch (_selectedSolver) {
-      case SolverType.Greedy:
-        return getGreedyMove();
-      case SolverType.BFS:
-        return getBFSMove();
-      case SolverType.Astar:
-        return getAStarMove();
-      case SolverType.DFS:
-        return getDFSMove();
-    }
-  }
-
-  List<List<int>> getNeighbors(List<int> state) {
-    List<List<int>> result = [];
-
-    int emptyIndex = state.indexOf(0);
-
-    for (int i = 0; i < state.length; i++) {
-      if (validMove(i, emptyIndex)) {
-        List<int> newState = List.from(state);
-        swap(newState, i, emptyIndex);
-        result.add(newState);
-      }
-    }
-
-    return result;
-  }
-
-  // ============================= Greedy BFS Algorithm =============================
-  int? getGreedyMove() {
-    List<List<int>> path = getGreedyPath(useManhattan);
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> getGreedyPath(bool useManhattan) {
-    Set<String> visited = {};
-    PriorityQueue<Node> pq = PriorityQueue<Node>(
-      (a, b) => a.fScore.compareTo(b.fScore),
-    );
-
-    Node start = Node(
-      state: List.from(tiles),
-      parent: null,
-      cost: 0,
-      fScore: useManhattan
-          ? manhattanDistance(tiles).toDouble()
-          : eculideanDistance(tiles),
-    );
-
-    pq.add(start);
-    visited.add(start.state.toString());
-
-    while (pq.isNotEmpty) {
-      Node currentNode = pq.removeFirst();
-      nodesExpanded++;
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-        return constructedPath(temp);
-      }
-      List<List<int>> neighbors = getNeighbors(current);
-      for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int h = useManhattan
-              ? manhattanDistance(neighbor)
-              : eculideanDistance(neighbor).toInt();
-
-          pq.add(
-            Node(
-              fScore: h.toDouble(),
-              cost: 0,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  // ============================= Astar Algorithm =============================
-  int? getAStarMove() {
-    List<List<int>> path = getAstarPath(useManhattan);
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> getAstarPath(bool useManhattan) {
-    Set<String> visited = {};
-    PriorityQueue<Node> pq = PriorityQueue<Node>(
-      (a, b) => a.fScore.compareTo(b.fScore),
-    );
-
-    Node start = Node(
-      state: List.from(tiles),
-      parent: null,
-      cost: 0,
-      fScore: useManhattan
-          ? manhattanDistance(tiles).toDouble()
-          : eculideanDistance(tiles),
-    );
-
-    pq.add(start);
-    visited.add(start.state.toString());
-
-    while (pq.isNotEmpty) {
-      Node currentNode = pq.removeFirst();
-      nodesExpanded++;
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-        return constructedPath(temp);
-      }
-      List<List<int>> neighbors = getNeighbors(current);
-      for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int g = currentNode.cost + 1;
-          int h = useManhattan
-              ? manhattanDistance(neighbor)
-              : eculideanDistance(neighbor).toInt();
-
-          pq.add(
-            Node(
-              fScore: (g + h).toDouble(),
-              cost: g,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  Future<void> solveWithAStarPath() async {
-    final startTime = DateTime.now();
-    List<List<int>> path = getAstarPath(useManhattan);
-    executionTime = DateTime.now().difference(startTime).inMilliseconds;
-
-    for (int i = 1; i < path.length; i++) {
-      if (_isSolving == false || !mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-      _isSolving = false;
-    }
-  }
-
-  // ============================= BFS Algorithm =============================
-  int? getBFSMove() {
-    List<List<int>> path = getBFSPath();
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> getBFSPath() {
-    Queue<Node> queue = Queue();
-    Set<String> visited = {};
-    Node start = Node(
-      fScore: 0,
-      cost: 0,
-      state: List.from(tiles),
-      parent: null,
-    );
-
-    queue.add(start);
-    visited.add(start.state.toString());
-
-    while (queue.isNotEmpty) {
-      Node currentNode = queue.removeFirst();
-      nodesExpanded++;
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        Node goalNode = currentNode;
-
-        Node? temp = goalNode;
-
-        return constructedPath(temp);
-      }
-
-      List<List<int>> neighbors = getNeighbors(current);
-      for (var neighbor in neighbors) {
-        String key = neighbor.toString();
-
-        if (!visited.contains(key)) {
-          int g = currentNode.cost + 1;
-          int f = g;
-
-          queue.add(
-            Node(
-              fScore: f.toDouble(),
-              cost: g,
-              state: neighbor,
-              parent: currentNode,
-            ),
-          );
-          visited.add(key);
-        }
-      }
-    }
-    return [];
-  }
-
-  Future<void> solveWithBFSPath() async {
-    final startTime = DateTime.now();
-    List<List<int>> path = getBFSPath();
-    executionTime = DateTime.now().difference(startTime).inMilliseconds;
-
-    for (int i = 1; i < path.length; i++) {
-      if (_isSolving == false || !mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-      _isSolving = false;
-    }
-  }
-
-  // ============================= DFS Algorithm =============================
-  int? getDFSMove() {
-    List<List<int>> path = getDFSPath();
-    if (path.length > 1) {
-      return path[1].indexOf(0);
-    }
-    return null;
-  }
-
-  List<List<int>> getDFSPath() {
-    List<Node> stack = [];
-    Set<String> visited = {};
-    int maxDepth = 31;
-
-    Node start = Node(
-      fScore: 0,
-      cost: 0,
-      state: List.from(tiles),
-      parent: null,
-    );
-
-    stack.add(start);
-
-    while (stack.isNotEmpty) {
-      Node currentNode = stack.removeLast();
-
-      // if (currentNode.cost > maxDepth) continue;
-      nodesExpanded++;
-
-      String key = currentNode.state.toString();
-
-      //  mark visited AFTER popping
-      if (visited.contains(key)) continue;
-      visited.add(key);
-
-      List<int> current = currentNode.state;
-
-      if (listEquals(current, goal)) {
-        return constructedPath(currentNode);
-      }
-
-      List<List<int>> neighbors = getNeighbors(current).reversed.toList();
-
-      for (var neighbor in neighbors) {
-        stack.add(
-          Node(
-            fScore: 0,
-            cost: currentNode.cost + 1,
-            state: neighbor,
-            parent: currentNode,
+  void showWinDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("You Win 🎉"),
+        content: Text(
+          "Solver: ${_controller.selectedSolver.name}\n"
+          "Moves: ${_controller.moves}\n"
+          "Time: ${formatTime(_controller.time)}\n\n"
+          "Nodes Expanded: ${_controller.nodesExpanded}\n"
+          "Path Length: ${_controller.pathLength}\n"
+          "Execution Time: ${_controller.executionTime}ms\n",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _controller.shuffle();
+                _startCountUp();
+              });
+            },
+            child: const Text("Restart"),
           ),
-        );
-      }
-    }
-
-    return []; // means failed
-  }
-
-  Future<void> solveWithDFSPath() async {
-    final startTime = DateTime.now();
-    List<List<int>> path = getDFSPath();
-    executionTime = DateTime.now().difference(startTime).inMilliseconds;
-
-    for (int i = 1; i < path.length; i++) {
-      if (_isSolving == false || !mounted) return;
-
-      setState(() {
-        tiles = List.from(path[i]);
-        moves++;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (winState()) {
-      timer?.cancel();
-      showWinDialog();
-      _isSolving = false;
-    }
+        ],
+      ),
+    );
   }
 }
