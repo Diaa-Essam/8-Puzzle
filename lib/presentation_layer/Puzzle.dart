@@ -79,6 +79,22 @@ class _PuzzleState extends State<Puzzle> {
                 ),
                 const SizedBox(height: 10),
 
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.brown[300],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Nodes Expanded:$nodesExpanded\nPath Length: $pathLength\nExecution Time: ${executionTime} ms",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
                 SizedBox(
                   width: 260,
                   height: 260,
@@ -530,8 +546,6 @@ class _PuzzleState extends State<Puzzle> {
     pathLength = 0;
     executionTime = 0;
 
-    final startTime = DateTime.now();
-
     visited.clear();
 
     if (_selectedSolver == SolverType.bfs) {
@@ -575,7 +589,9 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   Future<void> solveWithBFSPath() async {
+    final startTime = DateTime.now();
     List<List<int>> path = getBFSPath();
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
 
     for (int i = 1; i < path.length; i++) {
       if (!mounted) return;
@@ -594,7 +610,9 @@ class _PuzzleState extends State<Puzzle> {
   }
 
   Future<void> solveWithAStarPath() async {
+    final startTime = DateTime.now();
     List<List<int>> path = getAstarPath(useManhattan);
+    executionTime = DateTime.now().difference(startTime).inMilliseconds;
 
     for (int i = 1; i < path.length; i++) {
       if (!mounted) return;
