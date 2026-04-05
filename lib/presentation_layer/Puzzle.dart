@@ -304,6 +304,7 @@ class _PuzzleState extends State<Puzzle> {
                               showResult("Not Solvable");
                               return;
                             }
+                            inputController.text = "";
                             _controller.tiles = nums;
                             setState(() {});
                           } catch (e) {
