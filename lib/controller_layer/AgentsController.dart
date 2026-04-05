@@ -11,6 +11,7 @@ class Agentscontroller {
   //initial and final states
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  Map<SolverType, Map<String, int>> history = {};
   List<int>? _lastState;
   Set<String> visited = {};
   SolverType selectedSolver = SolverType.bfs;
@@ -417,6 +418,11 @@ class Agentscontroller {
     selectedSolver = SolverType.bfs;
     await autoSolve(() {}, () {}); // No UI Update
     tiles = List.from(original);
+    history[SolverType.bfs] = {
+      "Nodes Expanded": nodesExpanded,
+      "Path Length": pathLength,
+      "Execution Time": executionTime,
+    };
   }
 
   // ============================= Heuristics =============================
