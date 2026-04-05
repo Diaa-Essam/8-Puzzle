@@ -14,6 +14,7 @@ class Puzzle extends StatefulWidget {
 
 class _PuzzleState extends State<Puzzle> {
   final Agentscontroller _controller = Agentscontroller();
+  final TextEditingController inputController = TextEditingController();
 
   @override
   void initState() {
@@ -271,6 +272,48 @@ class _PuzzleState extends State<Puzzle> {
                       ),
                     ],
                   ),
+
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: TextField(
+                          controller: inputController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+
+                            hintText: "Enter Puzzle (e.g. 125340678)",
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          try {
+                            final nums = parseInput(
+                              inputController.text.trim(),
+                            );
+
+                            if (!isValidState(nums)) {
+                              showResult("Invalid Input");
+                              return;
+                            }
+                            if (!_controller.isSolvable(nums)) {
+                              showResult("Not Solvalbe");
+                              return;
+                            }
+                            _controller.tiles = nums;
+                            setState(() {});
+                          } catch (e) {
+                            showResult("Invalid Format");
+                          }
+                        },
+                        child: Text("Check"),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -382,6 +425,35 @@ class _PuzzleState extends State<Puzzle> {
             onPressed: () {
               Navigator.of(context).pop();
             },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool isValidState(List<int> nums) {
+    if (nums.length != 9) return false;
+
+    final set = nums.toSet();
+    return set.length == 9 && set.contains([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  }
+
+  List<int> parseInput(String input) {
+    if (input.length != 9) throw Exception("Invalid length");
+
+    return input.split('').map(int.parse).toList();
+  }
+
+  void showResult(String msg) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Result"),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
             child: const Text("OK"),
           ),
         ],

@@ -9,7 +9,7 @@ import 'package:myapp/controller_layer/SolverType.dart';
 
 class Agentscontroller {
   //initial and final states
-  List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+  List<int> tiles = [1, 2, 5, 3, 4, 0, 6, 7, 8];
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   Map<SolverType, Map<String, int>> history = {};
   List<int>? _lastState;
@@ -265,11 +265,10 @@ class Agentscontroller {
     return null;
   }
 
-  // Complete
   List<List<int>> getDFSPath() {
     List<Node> stack = [];
     Set<String> visited = {};
-    int maxDepth = 31;
+    int maxDepth = 50;
 
     Node start = Node(
       fScore: 0,
@@ -577,9 +576,9 @@ class Agentscontroller {
   }
 
   void shuffle() {
-    do {
-      tiles.shuffle();
-    } while (isSolvable(tiles) == true);
+    // do {
+    //   tiles.shuffle();
+    // } while (isSolvable(tiles) == false);
 
     nodesExpanded = 0;
     executionTime = 0;
@@ -591,7 +590,6 @@ class Agentscontroller {
     time = 0;
 
     tiles = List.from(goal);
-
     for (int c = 0; c < 10; c++) {
       List<int> possibleMoves = [];
       int emptyIndex = tiles.indexOf(0);
