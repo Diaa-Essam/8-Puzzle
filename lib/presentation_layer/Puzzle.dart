@@ -292,16 +292,16 @@ class _PuzzleState extends State<Puzzle> {
                       ElevatedButton(
                         onPressed: () {
                           try {
-                            final nums = parseInput(
+                            final nums = _controller.parseInput(
                               inputController.text.trim(),
                             );
 
-                            if (!isValidState(nums)) {
+                            if (!_controller.isValidState(nums)) {
                               showResult("Invalid Input");
                               return;
                             }
                             if (!_controller.isSolvable(nums)) {
-                              showResult("Not Solvalbe");
+                              showResult("Not Solvable");
                               return;
                             }
                             _controller.tiles = nums;
@@ -430,31 +430,6 @@ class _PuzzleState extends State<Puzzle> {
         ],
       ),
     );
-  }
-
-  bool isValidState(List<int> nums) {
-    if (nums.length != 9) return false;
-
-    final set = nums.toSet();
-
-    // Check if set contains all numbers 0-8
-    for (int i = 0; i <= 8; i++) {
-      if (!set.contains(i)) return false;
-    }
-
-    return true;
-  }
-
-  List<int> parseInput(String input) {
-    if (input.length != 9) throw Exception("Enter exactly 9 numbers");
-
-    List<int> result = [];
-    for (var char in input.split('')) {
-      int? num = int.tryParse(char);
-      if (num == null) throw Exception("Only numbers 0-8 allowed");
-      result.add(num);
-    }
-    return result;
   }
 
   void showResult(String msg) {
