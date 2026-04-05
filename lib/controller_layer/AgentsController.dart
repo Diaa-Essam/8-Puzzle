@@ -23,7 +23,7 @@ class Agentscontroller {
   int pathLength = 0;
   int executionTime = 0;
 
-  //======================================================== bfs
+  // ============================= BFS Algorithm =============================
   int? getBFSMove() {
     List<List<int>> path = getBFSPath();
     if (path.length > 1) {
@@ -105,8 +105,7 @@ class Agentscontroller {
     }
   }
 
-  //==========================================================================greedy
-
+  // ============================= Greedy Algorithm =============================
   int? getGreedyMove() {
     List<List<int>> path = getGreedyPath(useManhattan);
     if (path.length > 1) {
@@ -168,7 +167,7 @@ class Agentscontroller {
     return [];
   }
 
-  //========================================================================A*
+  // ============================= A* Algorithm =============================A*
 
   int? getAStarMove() {
     List<List<int>> path = getAstarPath(useManhattan);
@@ -269,7 +268,7 @@ class Agentscontroller {
   List<List<int>> getDFSPath() {
     List<Node> stack = [];
     Set<String> visited = {};
-    int maxDepth = 31; // double check
+    // int maxDepth = 31; // double check
 
     Node start = Node(
       fScore: 0,
@@ -412,7 +411,48 @@ class Agentscontroller {
     }
   }
 
-  //helper functions
+  // ============================= Heuristics =============================
+  int manhattanDistance(List<int> state) {
+    int distance = 0;
+
+    for (int i = 0; i < state.length; i++) {
+      int value = state[i];
+      if (value == 0) continue;
+
+      int currentRow = i ~/ 3;
+      int currentCol = i % 3;
+
+      int goalRow = (value - 1) ~/ 3;
+      int goalCol = (value - 1) % 3;
+
+      distance += (currentRow - goalRow).abs() + (currentCol - goalCol).abs();
+    }
+
+    return distance;
+  }
+
+  double eculideanDistance(List<int> state) {
+    double distance = 0;
+
+    for (int i = 0; i < state.length; i++) {
+      int value = state[i];
+      if (value == 0) continue;
+
+      int currentRow = i ~/ 3;
+      int currentCol = i % 3;
+
+      int goalRow = (value - 1) ~/ 3;
+      int goalCol = (value - 1) % 3;
+
+      distance += sqrt(
+        pow(currentRow - goalRow, 2) + pow(currentCol - goalCol, 2),
+      );
+    }
+
+    return distance;
+  }
+
+  // ============================= Helper Functions =============================
 
   List<List<int>> constructedPath(Node? temp) {
     List<List<int>> path = [];
@@ -454,46 +494,6 @@ class Agentscontroller {
     tiles[emptyIndex] = temp;
   }
 
-  int manhattanDistance(List<int> state) {
-    int distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += (currentRow - goalRow).abs() + (currentCol - goalCol).abs();
-    }
-
-    return distance;
-  }
-
-  double eculideanDistance(List<int> state) {
-    double distance = 0;
-
-    for (int i = 0; i < state.length; i++) {
-      int value = state[i];
-      if (value == 0) continue;
-
-      int currentRow = i ~/ 3;
-      int currentCol = i % 3;
-
-      int goalRow = (value - 1) ~/ 3;
-      int goalCol = (value - 1) % 3;
-
-      distance += sqrt(
-        pow(currentRow - goalRow, 2) + pow(currentCol - goalCol, 2),
-      );
-    }
-
-    return distance;
-  }
-
   bool winState() {
     for (int i = 0; i < tiles.length - 1; i++) {
       if (tiles[i] != i + 1) return false;
@@ -523,6 +523,10 @@ class Agentscontroller {
   }
 
   void shuffle() {
+    do {
+      tiles.shuffle();
+    } while (isSolvable(tiles) == true);
+
     nodesExpanded = 0;
     executionTime = 0;
     pathLength = 0;
@@ -547,5 +551,18 @@ class Agentscontroller {
       int pickedTile = possibleMoves[Random().nextInt(possibleMoves.length)];
       swap(tiles, pickedTile, emptyIndex);
     }
+  }
+
+  bool isSolvable(List<int> state) {
+    int inversions = 0;
+
+    for (int i = 0; i < state.length; i++) {
+      for (int j = i + 1; j < state.length; j++) {
+        if (state[i] != 0 && state[j] != 0 && state[i] > state[j]) {
+          inversions++;
+        }
+      }
+    }
+    return inversions % 2 == 0; // If even means solvable
   }
 }
