@@ -436,13 +436,25 @@ class _PuzzleState extends State<Puzzle> {
     if (nums.length != 9) return false;
 
     final set = nums.toSet();
-    return set.length == 9 && set.contains([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+    // Check if set contains all numbers 0-8
+    for (int i = 0; i <= 8; i++) {
+      if (!set.contains(i)) return false;
+    }
+
+    return true;
   }
 
   List<int> parseInput(String input) {
-    if (input.length != 9) throw Exception("Invalid length");
+    if (input.length != 9) throw Exception("Enter exactly 9 numbers");
 
-    return input.split('').map(int.parse).toList();
+    List<int> result = [];
+    for (var char in input.split('')) {
+      int? num = int.tryParse(char);
+      if (num == null) throw Exception("Only numbers 0-8 allowed");
+      result.add(num);
+    }
+    return result;
   }
 
   void showResult(String msg) {
