@@ -40,228 +40,238 @@ class _PuzzleState extends State<Puzzle> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.brown,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Moves: ${_controller.moves}\nTimer: ${formatTime(_controller.time)}",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.brown,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: 260,
-                  height: 260,
-                  child: GridView.builder(
-                    itemCount: 9,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                        ),
-                    itemBuilder: (context, index) {
-                      int emptyIndex = _controller.tiles.indexOf(0);
-                      bool isMovable = _controller.validMove(index, emptyIndex);
-                      return TileWidget(
-                        value: _controller.tiles[index],
-                        onTap: isMovable
-                            ? () {
-                                if (_controller.moves == 0) {
-                                  _startCountUp();
-                                }
-                                _controller.handleTap(
-                                  index,
-                                  () => setState(() {}),
-                                  showWinDialog,
-                                );
-                              }
-                            : null,
-                        isMovable: isMovable,
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () {
-                          showDialog(
-                            barrierDismissible: false,
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text("Are you sure?"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text("Cancel"),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.brown,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    setState(() {
-                                      _controller.isSolving = false;
-                                    });
-
-                                    Future.delayed(
-                                      const Duration(milliseconds: 50),
-                                      () {
-                                        setState(() {
-                                          _controller.isSolving = false;
-                                          _controller.shuffle();
-                                          _startCountUp();
-                                        });
-                                      },
-                                    );
-                                  },
-                                  child: const Text("Confirm"),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: const Text("Restart"),
+                    child: Text(
+                      "Moves: ${_controller.moves}\nTimer: ${formatTime(_controller.time)}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: 260,
+                    height: 260,
+                    child: GridView.builder(
+                      itemCount: 9,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                          ),
+                      itemBuilder: (context, index) {
+                        int emptyIndex = _controller.tiles.indexOf(0);
+                        bool isMovable = _controller.validMove(
+                          index,
+                          emptyIndex,
+                        );
+                        return TileWidget(
+                          value: _controller.tiles[index],
+                          onTap: isMovable
+                              ? () {
+                                  if (_controller.moves == 0) {
+                                    _startCountUp();
+                                  }
+                                  _controller.handleTap(
+                                    index,
+                                    () => setState(() {}),
+                                    showWinDialog,
+                                  );
+                                }
+                              : null,
+                          isMovable: isMovable,
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              barrierDismissible: false,
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Are you sure?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text("Cancel"),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.brown,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      setState(() {
+                                        _controller.isSolving = false;
+                                      });
+
+                                      Future.delayed(
+                                        const Duration(milliseconds: 50),
+                                        () {
+                                          setState(() {
+                                            _controller.isSolving = false;
+                                            _controller.shuffle();
+                                            _startCountUp();
+                                          });
+                                        },
+                                      );
+                                    },
+                                    child: const Text("Confirm"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Restart",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        onPressed: () {
-                          int? hint = _controller.getHint();
-                          if (hint != null) {
-                            if (_controller.moves == 0) _startCountUp();
-                            _controller.handleTap(
-                              hint,
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            int? hint = _controller.getHint();
+                            if (hint != null) {
+                              if (_controller.moves == 0) _startCountUp();
+                              _controller.handleTap(
+                                hint,
+                                () => setState(() {}),
+                                showWinDialog,
+                              );
+                            }
+                          },
+                          child: const Text("Hint"),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.brown,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            await _controller.autoSolve(
                               () => setState(() {}),
                               showWinDialog,
                             );
-                          }
-                        },
-                        child: const Text("Hint"),
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.brown,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          await _controller.autoSolve(
-                            () => setState(() {}),
-                            showWinDialog,
-                          );
-                        },
-                        child: const Text(
-                          "Auto Solver",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          },
+                          child: const Text(
+                            "Auto Solver",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 5),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          await _controller.solveAndCompare();
-                        },
-                        child: const Text(
-                          "Solve & Compare",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      SizedBox(width: 5),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            await _controller.solveAndCompare();
+                          },
+                          child: const Text(
+                            "Solve & Compare",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 5),
-                  ],
-                ),
+                      SizedBox(width: 5),
+                    ],
+                  ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Solver: "),
-                    DropdownButton<SolverType>(
-                      value: _controller.selectedSolver,
-                      items: const [
-                        DropdownMenuItem(
-                          value: SolverType.bfs,
-                          child: Text("BFS"),
-                        ),
-                        DropdownMenuItem(
-                          value: SolverType.dfs,
-                          child: Text("DFS"),
-                        ),
-                        DropdownMenuItem(
-                          value: SolverType.greedy,
-                          child: Text("Greedy"),
-                        ),
-                        DropdownMenuItem(
-                          value: SolverType.aStar,
-                          child: Text("A*"),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _controller.selectedSolver = value!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Heuristic: "),
-                    DropdownButton<bool>(
-                      value: _controller.useManhattan,
-                      items: const [
-                        DropdownMenuItem(
-                          value: true,
-                          child: Text("Manhanttan"),
-                        ),
-                        DropdownMenuItem(
-                          value: false,
-                          child: Text("Euclidean"),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _controller.useManhattan = value!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Solver: "),
+                      DropdownButton<SolverType>(
+                        value: _controller.selectedSolver,
+                        items: const [
+                          DropdownMenuItem(
+                            value: SolverType.bfs,
+                            child: Text("BFS"),
+                          ),
+                          DropdownMenuItem(
+                            value: SolverType.dfs,
+                            child: Text("DFS"),
+                          ),
+                          DropdownMenuItem(
+                            value: SolverType.greedy,
+                            child: Text("Greedy"),
+                          ),
+                          DropdownMenuItem(
+                            value: SolverType.aStar,
+                            child: Text("A*"),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _controller.selectedSolver = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Heuristic: "),
+                      DropdownButton<bool>(
+                        value: _controller.useManhattan,
+                        items: const [
+                          DropdownMenuItem(
+                            value: true,
+                            child: Text("Manhanttan"),
+                          ),
+                          DropdownMenuItem(
+                            value: false,
+                            child: Text("Euclidean"),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _controller.useManhattan = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -290,7 +300,8 @@ class _PuzzleState extends State<Puzzle> {
     return "$m:$s";
   }
 
-  void showWinDialog() {
+  void showWinDialog() async {
+    await Future.delayed(Duration(seconds: 2));
     showDialog(
       barrierDismissible: false,
       context: context,

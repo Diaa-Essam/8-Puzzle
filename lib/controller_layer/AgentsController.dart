@@ -269,7 +269,7 @@ class Agentscontroller {
   List<List<int>> getDFSPath() {
     List<Node> stack = [];
     Set<String> visited = {};
-    // int maxDepth = 31; // double check
+    int maxDepth = 31;
 
     Node start = Node(
       fScore: 0,
@@ -283,12 +283,11 @@ class Agentscontroller {
     while (stack.isNotEmpty) {
       Node currentNode = stack.removeLast();
 
-      // if (currentNode.cost > maxDepth) continue;
+      if (currentNode.cost > maxDepth) continue;
       nodesExpanded++;
 
       String key = currentNode.state.toString();
 
-      //  mark visited AFTER popping
       if (visited.contains(key)) continue;
       visited.add(key);
 
@@ -312,7 +311,7 @@ class Agentscontroller {
       }
     }
 
-    return []; // means failed
+    return [];
   }
 
   Future<void> solveWithDFSPath(
