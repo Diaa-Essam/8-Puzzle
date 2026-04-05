@@ -202,6 +202,7 @@ class _PuzzleState extends State<Puzzle> {
                           ),
                           onPressed: () async {
                             await _controller.solveAndCompare();
+                            showCompareDialog();
                           },
                           child: const Text(
                             "Solve & Compare",
@@ -325,6 +326,63 @@ class _PuzzleState extends State<Puzzle> {
               });
             },
             child: const Text("Restart"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showCompareDialog() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Comparison Results"),
+        content: SingleChildScrollView(
+          child: Column(
+            // mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_controller.history.containsKey(SolverType.bfs))
+                Text(
+                  "BFS\n\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.bfs]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.bfs]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.bfs]!["time"]} ms\n"
+                  "=================================\n",
+                ),
+              if (_controller.history.containsKey(SolverType.dfs))
+                Text(
+                  "DFS\n\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.dfs]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.dfs]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.dfs]!["time"]} ms\n"
+                  "=================================\n",
+                ),
+              if (_controller.history.containsKey(SolverType.greedy))
+                Text(
+                  "Greedy-BFS\n\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.greedy]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.greedy]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.greedy]!["time"]} ms\n"
+                  "=================================\n",
+                ),
+              if (_controller.history.containsKey(SolverType.aStar))
+                Text(
+                  "Astar\n\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.aStar]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.aStar]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.aStar]!["time"]} ms\n"
+                  "=================================\n",
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text("OK"),
           ),
         ],
       ),

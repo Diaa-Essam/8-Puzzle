@@ -414,14 +414,55 @@ class Agentscontroller {
   Future<void> solveAndCompare() async {
     final original = List.from(tiles);
 
-    selectedSolver = SolverType.bfs;
-    await autoSolve(() {}, () {}); // No UI Update
+    // BFS
+    nodesExpanded = 0;
+    pathLength = 0;
     tiles = List.from(original);
+    final startTime = DateTime.now();
+    getBFSPath();
     history[SolverType.bfs] = {
-      "Nodes Expanded": nodesExpanded,
-      "Path Length": pathLength,
-      "Execution Time": executionTime,
+      "nodes": nodesExpanded,
+      "path": pathLength,
+      "time": DateTime.now().difference(startTime).inMilliseconds,
     };
+
+    // DFS
+    nodesExpanded = 0;
+    pathLength = 0;
+    tiles = List.from(original);
+    final startTime2 = DateTime.now();
+    getDFSPath();
+    history[SolverType.dfs] = {
+      "nodes": nodesExpanded,
+      "path": pathLength,
+      "time": DateTime.now().difference(startTime2).inMilliseconds,
+    };
+
+    // Greedy
+    nodesExpanded = 0;
+    pathLength = 0;
+    tiles = List.from(original);
+    final startTime3 = DateTime.now();
+    getGreedyPath(useManhattan);
+    history[SolverType.greedy] = {
+      "nodes": nodesExpanded,
+      "path": pathLength,
+      "time": DateTime.now().difference(startTime3).inMilliseconds,
+    };
+
+    // A*
+    nodesExpanded = 0;
+    pathLength = 0;
+    tiles = List.from(original);
+    final startTime4 = DateTime.now();
+    getAstarPath(useManhattan);
+    history[SolverType.aStar] = {
+      "nodes": nodesExpanded,
+      "path": pathLength,
+      "time": DateTime.now().difference(startTime4).inMilliseconds,
+    };
+
+    tiles = List.from(original);
   }
 
   // ============================= Heuristics =============================
