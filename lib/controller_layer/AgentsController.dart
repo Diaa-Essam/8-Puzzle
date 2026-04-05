@@ -411,6 +411,10 @@ class Agentscontroller {
     }
   }
 
+  Future<void> solveAndCompare() async {
+    print("Running comparions...");
+  }
+
   // ============================= Heuristics =============================
   int manhattanDistance(List<int> state) {
     int distance = 0;

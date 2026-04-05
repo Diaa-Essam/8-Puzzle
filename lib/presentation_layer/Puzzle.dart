@@ -191,7 +191,9 @@ class _PuzzleState extends State<Puzzle> {
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
                         ),
-                        onPressed: () async {},
+                        onPressed: () async {
+                          await _controller.solveAndCompare();
+                        },
                         child: const Text(
                           "Solve & Compare",
                           maxLines: 1,
