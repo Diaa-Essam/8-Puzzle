@@ -11,7 +11,8 @@ class Agentscontroller {
   //initial and final states
   List<int> tiles = [1, 2, 5, 3, 4, 0, 6, 7, 8];
   List<int> goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-  Map<SolverType, Map<String, int>> history = {};
+  Map<String, Map<String, int>> history = {};
+
   List<int>? _lastState;
   Set<String> visited = {};
   SolverType selectedSolver = SolverType.bfs;
@@ -419,7 +420,7 @@ class Agentscontroller {
     tiles = List.from(original);
     final startTime = DateTime.now();
     getBFSPath();
-    history[SolverType.bfs] = {
+    history[SolverType.bfs.name] = {
       "nodes": nodesExpanded,
       "path": pathLength,
       "time": DateTime.now().difference(startTime).inMilliseconds,
@@ -431,7 +432,7 @@ class Agentscontroller {
     tiles = List.from(original);
     final startTime2 = DateTime.now();
     getDFSPath();
-    history[SolverType.dfs] = {
+    history[SolverType.dfs.name] = {
       "nodes": nodesExpanded,
       "path": pathLength,
       "time": DateTime.now().difference(startTime2).inMilliseconds,
@@ -443,22 +444,34 @@ class Agentscontroller {
     tiles = List.from(original);
     final startTime3 = DateTime.now();
     getGreedyPath(useManhattan);
-    history[SolverType.greedy] = {
+    history[SolverType.greedy.name] = {
       "nodes": nodesExpanded,
       "path": pathLength,
       "time": DateTime.now().difference(startTime3).inMilliseconds,
     };
 
-    // A*
+    // A* with Manhattan
     nodesExpanded = 0;
     pathLength = 0;
     tiles = List.from(original);
     final startTime4 = DateTime.now();
-    getAstarPath(useManhattan);
-    history[SolverType.aStar] = {
+    getAstarPath(true);
+    history["manhattan"] = {
       "nodes": nodesExpanded,
       "path": pathLength,
       "time": DateTime.now().difference(startTime4).inMilliseconds,
+    };
+
+    // A* with Euclidean
+    nodesExpanded = 0;
+    pathLength = 0;
+    tiles = List.from(original);
+    final startTime5 = DateTime.now();
+    getAstarPath(false);
+    history["euclidean"] = {
+      "nodes": nodesExpanded,
+      "path": pathLength,
+      "time": DateTime.now().difference(startTime5).inMilliseconds,
     };
 
     tiles = List.from(original);

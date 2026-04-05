@@ -175,6 +175,11 @@ class _PuzzleState extends State<Puzzle> {
                         ),
                       ),
                       const SizedBox(width: 5),
+                    ],
+                  ),
+
+                  Row(
+                    children: [
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -283,7 +288,6 @@ class _PuzzleState extends State<Puzzle> {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(),
-
                             hintText: "Enter Puzzle (e.g. 125340678)",
                           ),
                         ),
@@ -384,38 +388,45 @@ class _PuzzleState extends State<Puzzle> {
         title: const Text("Comparison Results"),
         content: SingleChildScrollView(
           child: Column(
-            // mainAxisSize: MainAxisSize.min,
             children: [
-              if (_controller.history.containsKey(SolverType.bfs))
+              if (_controller.history.containsKey(SolverType.bfs.name))
                 Text(
                   "BFS\n\n"
-                  "Nodes Expanded: ${_controller.history[SolverType.bfs]!["nodes"]}\n"
-                  "Path Length: ${_controller.history[SolverType.bfs]!["path"]}\n"
-                  "Execution Time: ${_controller.history[SolverType.bfs]!["time"]} ms\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.bfs.name]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.bfs.name]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.bfs.name]!["time"]} ms\n"
                   "=================================\n",
                 ),
-              if (_controller.history.containsKey(SolverType.dfs))
+              if (_controller.history.containsKey(SolverType.dfs.name))
                 Text(
                   "DFS\n\n"
-                  "Nodes Expanded: ${_controller.history[SolverType.dfs]!["nodes"]}\n"
-                  "Path Length: ${_controller.history[SolverType.dfs]!["path"]}\n"
-                  "Execution Time: ${_controller.history[SolverType.dfs]!["time"]} ms\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.dfs.name]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.dfs.name]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.dfs.name]!["time"]} ms\n"
                   "=================================\n",
                 ),
-              if (_controller.history.containsKey(SolverType.greedy))
+              if (_controller.history.containsKey(SolverType.greedy.name))
                 Text(
                   "Greedy-BFS\n\n"
-                  "Nodes Expanded: ${_controller.history[SolverType.greedy]!["nodes"]}\n"
-                  "Path Length: ${_controller.history[SolverType.greedy]!["path"]}\n"
-                  "Execution Time: ${_controller.history[SolverType.greedy]!["time"]} ms\n"
+                  "Nodes Expanded: ${_controller.history[SolverType.greedy.name]!["nodes"]}\n"
+                  "Path Length: ${_controller.history[SolverType.greedy.name]!["path"]}\n"
+                  "Execution Time: ${_controller.history[SolverType.greedy.name]!["time"]} ms\n"
                   "=================================\n",
                 ),
-              if (_controller.history.containsKey(SolverType.aStar))
+              if (_controller.history.containsKey("manhattan"))
                 Text(
-                  "Astar\n\n"
-                  "Nodes Expanded: ${_controller.history[SolverType.aStar]!["nodes"]}\n"
-                  "Path Length: ${_controller.history[SolverType.aStar]!["path"]}\n"
-                  "Execution Time: ${_controller.history[SolverType.aStar]!["time"]} ms\n"
+                  "A* (Manhattan)\n\n"
+                  "Nodes Expanded: ${_controller.history["manhattan"]!["nodes"]}\n"
+                  "Path Length: ${_controller.history["manhattan"]!["path"]}\n"
+                  "Execution Time: ${_controller.history["manhattan"]!["time"]} ms\n"
+                  "=================================\n",
+                ),
+              if (_controller.history.containsKey("euclidean"))
+                Text(
+                  "A* (Euclidean)\n\n"
+                  "Nodes Expanded: ${_controller.history["euclidean"]!["nodes"]}\n"
+                  "Path Length: ${_controller.history["euclidean"]!["path"]}\n"
+                  "Execution Time: ${_controller.history["euclidean"]!["time"]} ms\n"
                   "=================================\n",
                 ),
             ],
