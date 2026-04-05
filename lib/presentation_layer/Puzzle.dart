@@ -184,6 +184,22 @@ class _PuzzleState extends State<Puzzle> {
                         ),
                       ),
                     ),
+                    SizedBox(width: 5),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {},
+                        child: const Text(
+                          "Solve & Compare",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 5),
                   ],
                 ),
 
@@ -206,7 +222,6 @@ class _PuzzleState extends State<Puzzle> {
                           value: SolverType.greedy,
                           child: Text("Greedy"),
                         ),
-
                         DropdownMenuItem(
                           value: SolverType.aStar,
                           child: Text("A*"),
