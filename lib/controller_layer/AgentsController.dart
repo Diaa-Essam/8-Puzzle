@@ -412,7 +412,11 @@ class Agentscontroller {
   }
 
   Future<void> solveAndCompare() async {
-    print("Running comparions...");
+    final original = List.from(tiles);
+
+    selectedSolver = SolverType.bfs;
+    await autoSolve(() {}, () {}); // No UI Update
+    tiles = List.from(original);
   }
 
   // ============================= Heuristics =============================
